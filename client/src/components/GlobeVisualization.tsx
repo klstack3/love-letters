@@ -70,12 +70,6 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
   return (
     <div className="relative w-full h-screen bg-[#050810] overflow-hidden" data-testid="globe-container">
       <div ref={mapContainer} className="absolute inset-0" />
-
-      <div className="absolute bottom-8 left-8 pointer-events-none z-10" data-testid="title-overlay">
-        <h1 className="text-3xl font-serif text-white/25 tracking-[0.2em] select-none">
-          Love Letters
-        </h1>
-      </div>
     </div>
   );
 }
