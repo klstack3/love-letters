@@ -61,10 +61,45 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           // Dark ocean color
           map.current.setPaintProperty('water', 'fill-color', '#050a14');
           
-          // Dark land color (same as ocean initially)
+          // Dark land color
           map.current.setPaintProperty('land', 'background-color', '#050a14');
 
-          // Add shimmery country borders
+          // Add country fills layer first
+          map.current.addLayer({
+            id: 'country-fills',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://mapbox.country-boundaries-v1'
+            },
+            'source-layer': 'country_boundaries',
+            paint: {
+              'fill-color': '#050a14',
+              'fill-opacity': 1
+            }
+          });
+
+          // Add gradient overlay for hover (dark blue to white gradient effect)
+          map.current.addLayer({
+            id: 'country-hover-gradient',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://mapbox.country-boundaries-v1'
+            },
+            'source-layer': 'country_boundaries',
+            paint: {
+              'fill-color': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                'rgba(255, 255, 255, 0.25)',
+                'transparent'
+              ],
+              'fill-opacity': 1
+            }
+          });
+
+          // Add shimmery country borders on top
           map.current.addLayer({
             id: 'country-boundaries',
             type: 'line',
@@ -81,46 +116,37 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add country fills for hover interaction with gradient
+          // Add country labels
           map.current.addLayer({
-            id: 'country-fills',
-            type: 'fill',
+            id: 'country-labels',
+            type: 'symbol',
             source: {
               type: 'vector',
               url: 'mapbox://mapbox.country-boundaries-v1'
             },
             'source-layer': 'country_boundaries',
-            paint: {
-              'fill-color': '#050a14',
-              'fill-opacity': 1
-            }
-          }, 'country-boundaries');
-
-          // Add gradient overlay layer for hover effect
-          map.current.addLayer({
-            id: 'country-fills-hover',
-            type: 'fill',
-            source: {
-              type: 'vector',
-              url: 'mapbox://mapbox.country-boundaries-v1'
+            layout: {
+              'text-field': ['get', 'name_en'],
+              'text-size': 12,
+              'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular']
             },
-            'source-layer': 'country_boundaries',
             paint: {
-              'fill-color': [
-                'interpolate',
-                ['linear'],
-                ['get', 'hover-progress'],
-                0, '#0a1428',
-                1, 'rgba(255, 255, 255, 0.25)'
+              'text-color': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                '#ffffff',
+                '#556677'
               ],
-              'fill-opacity': [
+              'text-halo-color': '#000000',
+              'text-halo-width': 1,
+              'text-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
                 1,
-                0
+                0.7
               ]
             }
-          }, 'country-boundaries');
+          });
 
           setMapLoaded(true);
         });
@@ -139,30 +165,37 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           let hoveredStateId: string | number | null = null;
 
           map.current.on('mousemove', 'country-fills', (e) => {
+            if (!map.current) return;
+            
             if (e.features && e.features.length > 0) {
               if (hoveredStateId !== null) {
-                map.current?.setFeatureState(
+                map.current.setFeatureState(
                   { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
                   { hover: false }
                 );
               }
               
               hoveredStateId = e.features[0].id!;
-              map.current?.setFeatureState(
+              map.current.setFeatureState(
                 { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
                 { hover: true }
               );
+              
+              map.current.getCanvas().style.cursor = 'pointer';
             }
           });
 
           map.current.on('mouseleave', 'country-fills', () => {
+            if (!map.current) return;
+            
             if (hoveredStateId !== null) {
-              map.current?.setFeatureState(
+              map.current.setFeatureState(
                 { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
                 { hover: false }
               );
             }
             hoveredStateId = null;
+            map.current.getCanvas().style.cursor = '';
           });
         });
       } catch (error) {
