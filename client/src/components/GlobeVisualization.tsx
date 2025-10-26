@@ -19,7 +19,6 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -50,11 +49,11 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
         map.current.on('style.load', () => {
           if (!map.current) return;
 
-          // Set atmospheric effects
+          // Set atmospheric effects with halo
           map.current.setFog({
-            color: 'rgb(5, 10, 20)',
-            'high-color': 'rgb(15, 25, 45)',
-            'horizon-blend': 0.05,
+            color: 'rgb(10, 20, 35)',
+            'high-color': 'rgb(20, 35, 60)',
+            'horizon-blend': 0.1,
             'space-color': 'rgb(0, 0, 5)',
             'star-intensity': 0.9
           });
@@ -82,7 +81,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add country fills for hover interaction
+          // Add country fills for hover interaction with gradient
           map.current.addLayer({
             id: 'country-fills',
             type: 'fill',
@@ -92,13 +91,34 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             },
             'source-layer': 'country_boundaries',
             paint: {
+              'fill-color': '#050a14',
+              'fill-opacity': 1
+            }
+          }, 'country-boundaries');
+
+          // Add gradient overlay layer for hover effect
+          map.current.addLayer({
+            id: 'country-fills-hover',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://mapbox.country-boundaries-v1'
+            },
+            'source-layer': 'country_boundaries',
+            paint: {
               'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'hover-progress'],
+                0, '#0a1428',
+                1, 'rgba(255, 255, 255, 0.25)'
+              ],
+              'fill-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
-                '#0d1a2e',
-                '#050a14'
-              ],
-              'fill-opacity': 1
+                1,
+                0
+              ]
             }
           }, 'country-boundaries');
 
@@ -160,6 +180,14 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
 
   return (
     <div className="relative w-full h-screen bg-[#000005] overflow-hidden" data-testid="globe-container">
+      {/* Globe halo effect */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(20, 35, 60, 0.4) 0%, rgba(20, 35, 60, 0.2) 40%, transparent 60%)',
+        }}
+      />
+      
       <div 
         ref={mapContainer} 
         className="absolute inset-0"
