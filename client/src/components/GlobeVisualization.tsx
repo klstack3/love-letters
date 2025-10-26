@@ -64,14 +64,24 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           // Dark land color
           map.current.setPaintProperty('land', 'background-color', '#050a14');
 
-          // Add country fills layer first
+          setMapLoaded(true);
+        });
+
+        map.current.on('load', () => {
+          if (!map.current) return;
+
+          // Add source for countries with promoteId to enable feature-state
+          map.current.addSource('countries', {
+            type: 'vector',
+            url: 'mapbox://mapbox.country-boundaries-v1',
+            promoteId: 'iso_3166_1'
+          });
+
+          // Add country fills layer
           map.current.addLayer({
             id: 'country-fills',
             type: 'fill',
-            source: {
-              type: 'vector',
-              url: 'mapbox://mapbox.country-boundaries-v1'
-            },
+            source: 'countries',
             'source-layer': 'country_boundaries',
             paint: {
               'fill-color': '#050a14',
@@ -79,14 +89,11 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add gradient overlay for hover (dark blue to white gradient effect)
+          // Add gradient overlay for hover
           map.current.addLayer({
             id: 'country-hover-gradient',
             type: 'fill',
-            source: {
-              type: 'vector',
-              url: 'mapbox://mapbox.country-boundaries-v1'
-            },
+            source: 'countries',
             'source-layer': 'country_boundaries',
             paint: {
               'fill-color': [
@@ -99,14 +106,11 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add shimmery country borders on top
+          // Add shimmery country borders
           map.current.addLayer({
             id: 'country-boundaries',
             type: 'line',
-            source: {
-              type: 'vector',
-              url: 'mapbox://mapbox.country-boundaries-v1'
-            },
+            source: 'countries',
             'source-layer': 'country_boundaries',
             paint: {
               'line-color': '#8ca3b8',
@@ -120,10 +124,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           map.current.addLayer({
             id: 'country-labels',
             type: 'symbol',
-            source: {
-              type: 'vector',
-              url: 'mapbox://mapbox.country-boundaries-v1'
-            },
+            source: 'countries',
             'source-layer': 'country_boundaries',
             layout: {
               'text-field': ['get', 'name_en'],
@@ -147,12 +148,6 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               ]
             }
           });
-
-          setMapLoaded(true);
-        });
-
-        map.current.on('load', () => {
-          if (!map.current) return;
           
           const nav = new mapboxgl.NavigationControl({
             visualizePitch: true,
@@ -161,23 +156,28 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           });
           map.current.addControl(nav, 'top-right');
 
-          // Add hover interaction for countries
-          let hoveredStateId: string | number | null = null;
+          // Hover interaction for countries
+          let hoveredCountryId: string | null = null;
 
           map.current.on('mousemove', 'country-fills', (e) => {
             if (!map.current) return;
             
             if (e.features && e.features.length > 0) {
-              if (hoveredStateId !== null) {
+              const feature = e.features[0];
+              const countryId = feature.properties?.iso_3166_1 as string | undefined;
+              
+              if (!countryId) return;
+              
+              if (hoveredCountryId && hoveredCountryId !== countryId) {
                 map.current.setFeatureState(
-                  { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
+                  { source: 'countries', sourceLayer: 'country_boundaries', id: hoveredCountryId },
                   { hover: false }
                 );
               }
               
-              hoveredStateId = e.features[0].id!;
+              hoveredCountryId = countryId;
               map.current.setFeatureState(
-                { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
+                { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
                 { hover: true }
               );
               
@@ -186,15 +186,13 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           });
 
           map.current.on('mouseleave', 'country-fills', () => {
-            if (!map.current) return;
+            if (!map.current || !hoveredCountryId) return;
             
-            if (hoveredStateId !== null) {
-              map.current.setFeatureState(
-                { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
-                { hover: false }
-              );
-            }
-            hoveredStateId = null;
+            map.current.setFeatureState(
+              { source: 'countries', sourceLayer: 'country_boundaries', id: hoveredCountryId },
+              { hover: false }
+            );
+            hoveredCountryId = null;
             map.current.getCanvas().style.cursor = '';
           });
         });
