@@ -64,6 +64,16 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           // Dark land color
           map.current.setPaintProperty('land', 'background-color', '#050a14');
 
+          // Hide all default labels from the base style
+          const style = map.current.getStyle();
+          if (style && style.layers) {
+            style.layers.forEach((layer) => {
+              if (layer.type === 'symbol' && layer.id.includes('label')) {
+                map.current?.setLayoutProperty(layer.id, 'visibility', 'none');
+              }
+            });
+          }
+
           setMapLoaded(true);
         });
 
@@ -89,7 +99,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add gradient overlay for hover
+          // Add gradient overlay for hover with brighter white
           map.current.addLayer({
             id: 'country-hover-gradient',
             type: 'fill',
@@ -99,10 +109,15 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'fill-color': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
-                'rgba(255, 255, 255, 0.25)',
+                '#ffffff',
                 'transparent'
               ],
-              'fill-opacity': 1
+              'fill-opacity': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                0.25,
+                0
+              ]
             }
           });
 
@@ -120,7 +135,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add country labels
+          // Add country labels (only once)
           map.current.addLayer({
             id: 'country-labels',
             type: 'symbol',
