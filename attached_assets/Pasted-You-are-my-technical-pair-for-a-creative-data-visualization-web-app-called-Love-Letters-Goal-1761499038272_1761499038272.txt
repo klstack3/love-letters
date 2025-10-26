@@ -1,0 +1,96 @@
+You are my technical pair for a creative data-visualization web app called **Love Letters**.
+
+**Goal**
+Create a minimalist, visually stunning 3D globe map showing the flight routes between two people.  
+Each route is manually defined.  
+The app should look like a work of digital art—opaque in meaning, but visually captivating.  
+
+**Visual + Interaction Requirements**
+- Background: deep, rich black.
+- Routes: luminous, curved great-circle or Bezier arcs with shimmery gradients (violet → cyan, or magenta → blue).  
+  Slight motion or pulse along the gradient to show direction.
+- Starting points: **tiny glowing dots**—one **deep green**, one **light pink**.
+- Meetup points: a **small golden envelope icon with a heart**, softly shimmering (SVG or Lottie).
+- Globe interaction: users can **zoom, pan, and rotate** freely.
+- Hovering over a route or point shows a subtle tooltip with the **date** of travel.
+- No explanatory text beyond the title “Love Letters”.  
+  The visualization should feel private and poetic.
+
+**Tech Stack**
+- **React + Vite + TypeScript**
+- **Mapbox GL JS** or **Deck.gl + Maplibre** (whichever supports smooth WebGL gradients)
+- **TailwindCSS** for minimal non-map styling
+- Optional enhancement: **three.js layer** or **particles.js** for faint background shimmer
+
+**Data Structure (src/data/routes.json)**
+```json
+[
+  {
+    "from": "London",
+    "to": "Kelowna",
+    "coords": [[-0.1276, 51.5072], [-119.4960, 49.8879]],
+    "color": ["#00ffc3", "#ff4d94"],
+    "date": "2023-06-15",
+    "meetup": true
+  },
+  {
+    "from": "New York",
+    "to": "Kelowna",
+    "coords": [[-74.0060, 40.7128], [-119.4960, 49.8879]],
+    "color": ["#ff4d94", "#00ffc3"],
+    "date": "2023-06-18",
+    "meetup": true
+  },
+  {
+    "from": "Kelowna",
+    "to": "London",
+    "coords": [[-119.4960, 49.8879], [-0.1276, 51.5072]],
+    "color": ["#00ffc3", "#ff4d94"],
+    "date": "2023-09-10",
+    "meetup": false
+  },
+  {
+    "from": "London",
+    "to": "New York",
+    "coords": [[-0.1276, 51.5072], [-74.0060, 40.7128]],
+    "color": ["#ff4d94", "#00ffc3"],
+    "date": "2024-03-04",
+    "meetup": true
+  }
+]
+Implementation Tasks
+
+Scaffold project:
+
+npm create vite@latest love-letters --template react-ts
+
+Install mapbox-gl, react-map-gl, tailwindcss, postcss, autoprefixer
+
+Configure Tailwind.
+
+Create src/components/Globe.tsx to render the map.
+
+Load data from routes.json.
+
+Draw glowing arcs for each route with gradient materials.
+
+Place small pink/green origin dots and golden envelope icons for meetups.
+
+Add hover tooltips for dates using Mapbox popups.
+
+Add smooth camera motion and subtle particle shimmer overlay.
+
+Responsive full-screen view; remove all map UI chrome except zoom/rotate.
+
+Include a minimal title overlay “Love Letters” in faint white text (bottom corner).
+
+Add an export option (optional): capture screenshot via html2canvas or three.js render target.
+
+Deliverables
+
+A complete, runnable repo structure with all dependencies and starter code.
+
+Ready to open in VS Code or Replit and preview in browser via npm run dev.
+
+Instructions
+Generate the full scaffold and base components with proper imports and placeholder assets, following the structure above.
