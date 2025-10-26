@@ -23,43 +23,59 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+    const initMap = async () => {
+      try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        
+        if (!config.mapboxToken) {
+          console.error('MAPBOX_ACCESS_TOKEN is not set');
+          return;
+        }
+        
+        mapboxgl.accessToken = config.mapboxToken;
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      projection: { name: 'globe' },
-      center: [-30, 30],
-      zoom: 1.5,
-      pitch: 0,
-      dragRotate: true,
-      interactive: true,
-    });
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current!,
+          style: 'mapbox://styles/mapbox/dark-v11',
+          projection: { name: 'globe' },
+          center: [-30, 30],
+          zoom: 1.5,
+          pitch: 0,
+          dragRotate: true,
+          interactive: true,
+        });
 
-    map.current.on('style.load', () => {
-      if (!map.current) return;
+        map.current.on('style.load', () => {
+          if (!map.current) return;
 
-      map.current.setFog({
-        color: 'rgb(15, 20, 35)',
-        'high-color': 'rgb(25, 35, 60)',
-        'horizon-blend': 0.03,
-        'space-color': 'rgb(5, 8, 15)',
-        'star-intensity': 0.8
-      });
+          map.current.setFog({
+            color: 'rgb(15, 20, 35)',
+            'high-color': 'rgb(25, 35, 60)',
+            'horizon-blend': 0.03,
+            'space-color': 'rgb(5, 8, 15)',
+            'star-intensity': 0.8
+          });
 
-      setMapLoaded(true);
-    });
+          setMapLoaded(true);
+        });
 
-    map.current.on('load', () => {
-      if (!map.current) return;
-      
-      const nav = new mapboxgl.NavigationControl({
-        visualizePitch: true,
-        showCompass: true,
-        showZoom: true,
-      });
-      map.current.addControl(nav, 'top-right');
-    });
+        map.current.on('load', () => {
+          if (!map.current) return;
+          
+          const nav = new mapboxgl.NavigationControl({
+            visualizePitch: true,
+            showCompass: true,
+            showZoom: true,
+          });
+          map.current.addControl(nav, 'top-right');
+        });
+      } catch (error) {
+        console.error('Failed to initialize map:', error);
+      }
+    };
+
+    initMap();
 
     return () => {
       map.current?.remove();
