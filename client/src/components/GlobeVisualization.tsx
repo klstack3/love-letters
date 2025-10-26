@@ -19,6 +19,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -49,13 +50,57 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
         map.current.on('style.load', () => {
           if (!map.current) return;
 
+          // Set atmospheric effects
           map.current.setFog({
-            color: 'rgb(15, 20, 35)',
-            'high-color': 'rgb(25, 35, 60)',
-            'horizon-blend': 0.03,
-            'space-color': 'rgb(5, 8, 15)',
-            'star-intensity': 0.8
+            color: 'rgb(5, 10, 20)',
+            'high-color': 'rgb(15, 25, 45)',
+            'horizon-blend': 0.05,
+            'space-color': 'rgb(0, 0, 5)',
+            'star-intensity': 0.9
           });
+
+          // Dark ocean color
+          map.current.setPaintProperty('water', 'fill-color', '#050a14');
+          
+          // Dark land color (same as ocean initially)
+          map.current.setPaintProperty('land', 'background-color', '#050a14');
+
+          // Add shimmery country borders
+          map.current.addLayer({
+            id: 'country-boundaries',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://mapbox.country-boundaries-v1'
+            },
+            'source-layer': 'country_boundaries',
+            paint: {
+              'line-color': '#8ca3b8',
+              'line-width': 1,
+              'line-opacity': 0.6,
+              'line-blur': 0.5
+            }
+          });
+
+          // Add country fills for hover interaction
+          map.current.addLayer({
+            id: 'country-fills',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://mapbox.country-boundaries-v1'
+            },
+            'source-layer': 'country_boundaries',
+            paint: {
+              'fill-color': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                '#0d1a2e',
+                '#050a14'
+              ],
+              'fill-opacity': 1
+            }
+          }, 'country-boundaries');
 
           setMapLoaded(true);
         });
@@ -69,6 +114,36 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             showZoom: true,
           });
           map.current.addControl(nav, 'top-right');
+
+          // Add hover interaction for countries
+          let hoveredStateId: string | number | null = null;
+
+          map.current.on('mousemove', 'country-fills', (e) => {
+            if (e.features && e.features.length > 0) {
+              if (hoveredStateId !== null) {
+                map.current?.setFeatureState(
+                  { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
+                  { hover: false }
+                );
+              }
+              
+              hoveredStateId = e.features[0].id!;
+              map.current?.setFeatureState(
+                { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
+                { hover: true }
+              );
+            }
+          });
+
+          map.current.on('mouseleave', 'country-fills', () => {
+            if (hoveredStateId !== null) {
+              map.current?.setFeatureState(
+                { source: 'composite', sourceLayer: 'country_boundaries', id: hoveredStateId },
+                { hover: false }
+              );
+            }
+            hoveredStateId = null;
+          });
         });
       } catch (error) {
         console.error('Failed to initialize map:', error);
@@ -84,8 +159,30 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
   }, []);
 
   return (
-    <div className="relative w-full h-screen bg-[#050810] overflow-hidden" data-testid="globe-container">
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="relative w-full h-screen bg-[#000005] overflow-hidden" data-testid="globe-container">
+      <div 
+        ref={mapContainer} 
+        className="absolute inset-0"
+        style={{
+          filter: 'brightness(1.05) contrast(1.1)',
+        }}
+      />
+      
+      {/* Shimmer overlay effect */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-20"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(140, 163, 184, 0.1) 0%, transparent 70%)',
+          animation: 'shimmer 8s ease-in-out infinite',
+        }}
+      />
+
+      <style>{`
+        @keyframes shimmer {
+          0%, 100% { opacity: 0.15; }
+          50% { opacity: 0.25; }
+        }
+      `}</style>
     </div>
   );
 }
