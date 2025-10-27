@@ -152,28 +152,19 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add country labels with distance-based fade and deduplication
+          // Add country labels with distance-based fade
           map.current.addLayer({
             id: 'country-labels',
             type: 'symbol',
             source: 'countries',
             'source-layer': 'country_boundaries',
-            filter: [
-              'all',
-              ['==', ['get', 'worldview'], 'all'],
-              ['!=', ['get', 'disputed'], 'true']
-            ],
             layout: {
               'text-field': ['get', 'name_en'],
               'text-size': 12,
               'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-              'text-pitch-alignment': 'map',
-              'text-rotation-alignment': 'map',
-              'text-max-angle': 45,
               'symbol-placement': 'point',
               'text-allow-overlap': false,
-              'symbol-spacing': 250,
-              'text-padding': 10
+              'symbol-sort-key': ['get', 'area']
             },
             paint: {
               'text-color': [
@@ -185,17 +176,10 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'text-halo-color': '#000000',
               'text-halo-width': 1,
               'text-opacity': [
-                'interpolate',
-                ['linear'],
-                ['coalesce', ['feature-state', 'opacity'], 0.7],
-                0, 0,
-                0.7, [
-                  'case',
-                  ['boolean', ['feature-state', 'hover'], false],
-                  1,
-                  0.7
-                ],
-                1, 1
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                1.0,
+                ['coalesce', ['feature-state', 'opacity'], 0.7]
               ]
             }
           });
