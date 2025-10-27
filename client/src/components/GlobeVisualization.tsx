@@ -16,12 +16,26 @@ interface GlobeVisualizationProps {
   routes: RouteData[];
 }
 
+interface LocationRoute {
+  person: string;
+  from: string;
+  distance: number;
+  date: string;
+  color: string;
+}
+
 export default function GlobeVisualization({ routes }: GlobeVisualizationProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [hoveredLocation, setHoveredLocation] = useState<{ name: string; distance: number; x: number; y: number } | null>(null);
+  const [hoveredLocation, setHoveredLocation] = useState<{ 
+    name: string; 
+    routes: LocationRoute[];
+    x: number; 
+    y: number;
+  } | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const locationRoutesRef = useRef<Map<string, LocationRoute[]>>(new Map());
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -344,13 +358,30 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             });
           });
 
+          // Build location routes map
+          locationRoutesRef.current.clear();
+          routes.forEach((route) => {
+            const distance = calculateDistance(route.coords[0], route.coords[1]);
+            
+            // Add to destination location
+            const destKey = `${route.coords[1][0]},${route.coords[1][1]}`;
+            if (!locationRoutesRef.current.has(destKey)) {
+              locationRoutesRef.current.set(destKey, []);
+            }
+            locationRoutesRef.current.get(destKey)!.push({
+              person: route.person,
+              from: route.from,
+              distance,
+              date: route.date,
+              color: route.color[0]
+            });
+          });
+
           // Add location markers
           const addedLocations = new Set<string>();
           
           routes.forEach((route) => {
             if (!map.current) return;
-
-            const distance = calculateDistance(route.coords[0], route.coords[1]);
 
             // Add origin marker
             const originKey = `${route.coords[0][0]},${route.coords[0][1]}`;
@@ -369,8 +400,8 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
                 cursor: pointer;
                 transition: all 0.3s ease;
               `;
-              originEl.dataset.location = route.from;
-              originEl.dataset.distance = distance.toString();
+              originEl.dataset.locationKey = originKey;
+              originEl.dataset.locationName = route.from;
 
               const originMarker = new mapboxgl.Marker({ element: originEl })
                 .setLngLat(route.coords[0])
@@ -396,8 +427,8 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
                 cursor: pointer;
                 transition: all 0.3s ease;
               `;
-              destEl.dataset.location = route.to;
-              destEl.dataset.distance = distance.toString();
+              destEl.dataset.locationKey = destKey;
+              destEl.dataset.locationName = route.to;
 
               const destMarker = new mapboxgl.Marker({ element: destEl })
                 .setLngLat(route.coords[1])
@@ -414,10 +445,14 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               target.style.transform = 'scale(1.5)';
               target.style.boxShadow = `0 0 20px ${target.style.background}`;
               
+              const locationKey = target.dataset.locationKey || '';
+              const locationName = target.dataset.locationName || '';
+              const locationRoutes = locationRoutesRef.current.get(locationKey) || [];
+              
               const rect = target.getBoundingClientRect();
               setHoveredLocation({
-                name: target.dataset.location || '',
-                distance: parseInt(target.dataset.distance || '0'),
+                name: locationName,
+                routes: locationRoutes,
                 x: rect.left + rect.width / 2,
                 y: rect.top
               });
@@ -433,19 +468,25 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Animate pulse effect
+          // Animate continuous pulse effect
           let pulseOffset = 0;
           const animatePulse = () => {
             if (!map.current) return;
             
-            pulseOffset = (pulseOffset + 0.01) % 1;
+            pulseOffset = (pulseOffset + 0.005);
             
             routes.forEach((_, index) => {
               if (map.current?.getLayer(`route-pulse-${index}`)) {
+                // Create continuous flowing dash pattern
                 map.current.setPaintProperty(
                   `route-pulse-${index}`,
                   'line-dasharray',
-                  [0, pulseOffset * 2, 2 - pulseOffset * 2]
+                  [0.5, 1.5, 0.5]
+                );
+                map.current.setPaintProperty(
+                  `route-pulse-${index}`,
+                  'line-offset',
+                  Math.sin(pulseOffset) * 0.5
                 );
               }
             });
@@ -497,20 +538,23 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
       />
 
       {/* Distance tooltip */}
-      {hoveredLocation && (
+      {hoveredLocation && hoveredLocation.routes.length > 0 && (
         <div
           className="absolute pointer-events-none z-50"
           style={{
             left: `${hoveredLocation.x}px`,
-            top: `${hoveredLocation.y - 60}px`,
+            top: `${hoveredLocation.y - 80}px`,
             transform: 'translateX(-50%)',
           }}
         >
           <div className="bg-black/90 text-white px-3 py-2 rounded-lg border border-white/20 backdrop-blur-sm">
-            <div className="text-sm font-medium">{hoveredLocation.name}</div>
-            <div className="text-xs text-white/70 mt-1">
-              {hoveredLocation.distance.toLocaleString()} km
-            </div>
+            <div className="text-sm font-medium mb-2">{hoveredLocation.name}</div>
+            {hoveredLocation.routes.map((route, idx) => (
+              <div key={idx} className="text-xs mt-1" style={{ color: route.color }}>
+                <span className="font-medium">{route.person}:</span> {route.from} → {route.distance.toLocaleString()} km
+                <div className="text-white/60 text-[10px]">{route.date}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
