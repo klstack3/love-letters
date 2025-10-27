@@ -596,6 +596,13 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           0%, 100% { opacity: 0.15; }
           50% { opacity: 0.25; }
         }
+        
+        .mapboxgl-ctrl-logo,
+        .mapboxgl-ctrl-attrib,
+        .mapboxgl-ctrl-bottom-left,
+        .mapboxgl-ctrl-bottom-right {
+          display: none !important;
+        }
       `}</style>
     </div>
   );
