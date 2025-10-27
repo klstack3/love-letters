@@ -445,49 +445,27 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               destEl.dataset.locationName = route.to;
               destEl.style.cssText = `
                 width: 24px;
-                height: 30px;
-                position: relative;
+                height: 32px;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                transition: transform 0.3s ease;
                 pointer-events: all;
+                transform-origin: center bottom;
               `;
               
-              // Pin body
-              const pinBody = document.createElement('div');
-              pinBody.style.cssText = `
-                width: 18px;
-                height: 18px;
-                background: ${route.color[1]};
-                border: 2px solid rgba(255, 255, 255, 0.4);
-                border-radius: 50% 50% 50% 0;
-                transform: rotate(-45deg);
-                box-shadow: 0 0 12px ${route.color[1]}80;
-                position: absolute;
-                top: 2px;
-                left: 3px;
-                pointer-events: none;
+              // SVG pin icon
+              destEl.innerHTML = `
+                <svg width="24" height="32" viewBox="0 0 24 32" style="filter: drop-shadow(0 0 8px ${route.color[1]}80); pointer-events: none;">
+                  <path d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 19 9 19s9-12.25 9-19c0-4.97-4.03-9-9-9z" 
+                    fill="${route.color[1]}" 
+                    stroke="rgba(255, 255, 255, 0.4)" 
+                    stroke-width="1.5"/>
+                  <circle cx="12" cy="9" r="3" fill="rgba(0, 0, 0, 0.3)"/>
+                </svg>
               `;
-              
-              // Pin inner dot
-              const pinDot = document.createElement('div');
-              pinDot.style.cssText = `
-                width: 6px;
-                height: 6px;
-                background: rgba(0, 0, 0, 0.3);
-                border-radius: 50%;
-                position: absolute;
-                top: 8px;
-                left: 9px;
-                pointer-events: none;
-              `;
-              
-              destEl.appendChild(pinBody);
-              destEl.appendChild(pinDot);
               
               // Add hover handlers directly
               destEl.addEventListener('mouseenter', () => {
                 destEl.style.transform = 'scale(1.3)';
-                pinBody.style.boxShadow = `0 0 20px ${route.color[1]}`;
                 
                 const locationRoutes = locationRoutesRef.current.get(destKey) || [];
                 const rect = destEl.getBoundingClientRect();
@@ -502,11 +480,13 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               
               destEl.addEventListener('mouseleave', () => {
                 destEl.style.transform = 'scale(1)';
-                pinBody.style.boxShadow = `0 0 12px ${route.color[1]}80`;
                 setHoveredLocation(null);
               });
 
-              const destMarker = new mapboxgl.Marker({ element: destEl, anchor: 'bottom' })
+              const destMarker = new mapboxgl.Marker({ 
+                element: destEl,
+                anchor: 'bottom'
+              })
                 .setLngLat(route.coords[1])
                 .addTo(map.current);
               
