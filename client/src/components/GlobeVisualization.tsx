@@ -135,7 +135,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add country labels (only once)
+          // Add country labels with distance-based fade
           map.current.addLayer({
             id: 'country-labels',
             type: 'symbol',
@@ -144,7 +144,10 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             layout: {
               'text-field': ['get', 'name_en'],
               'text-size': 12,
-              'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular']
+              'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+              'text-pitch-alignment': 'map',
+              'text-rotation-alignment': 'map',
+              'text-max-angle': 45
             },
             paint: {
               'text-color': [
@@ -159,7 +162,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
                 1,
-                0.7
+                ['coalesce', ['feature-state', 'opacity'], 0.7]
               ]
             }
           });
@@ -170,6 +173,56 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             showZoom: true,
           });
           map.current.addControl(nav, 'top-right');
+
+          // Update label opacity based on distance from center
+          const updateLabelOpacity = () => {
+            if (!map.current) return;
+            
+            const center = map.current.getCenter();
+            const features = map.current.querySourceFeatures('countries', {
+              sourceLayer: 'country_boundaries'
+            });
+
+            features.forEach((feature) => {
+              if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+                const countryId = feature.properties?.iso_3166_1;
+                if (!countryId) return;
+
+                // Get the center of the country (approximate)
+                const bounds = feature.properties;
+                let featureLng = 0;
+                let featureLat = 0;
+
+                // Use a simple centroid calculation
+                if (feature.geometry.type === 'Polygon') {
+                  const coords = feature.geometry.coordinates[0];
+                  if (coords && coords.length > 0) {
+                    featureLng = coords[0][0];
+                    featureLat = coords[0][1];
+                  }
+                }
+
+                // Calculate angular distance from center
+                const dLng = Math.abs(featureLng - center.lng);
+                const dLat = Math.abs(featureLat - center.lat);
+                const distance = Math.sqrt(dLng * dLng + dLat * dLat);
+
+                // Map distance to opacity (0.7 at center, 0 at ~90 degrees away)
+                const maxDistance = 90;
+                const opacity = Math.max(0, Math.min(0.7, 0.7 * (1 - distance / maxDistance)));
+
+                map.current?.setFeatureState(
+                  { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
+                  { opacity }
+                );
+              }
+            });
+          };
+
+          // Update opacity on map move
+          map.current.on('move', updateLabelOpacity);
+          map.current.on('zoom', updateLabelOpacity);
+          updateLabelOpacity(); // Initial update
 
           // Hover interaction for countries
           let hoveredCountryId: string | null = null;
