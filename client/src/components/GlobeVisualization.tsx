@@ -658,13 +658,13 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
       >
         <div className="text-white font-mono text-sm space-y-1">
           <div data-testid="stat-distance">
-            Total distance travelled: {stats.totalDistance.toLocaleString()} km
+            Distance: {stats.totalDistance.toLocaleString()} km
           </div>
           <div data-testid="stat-continents">
-            Total continents visited: {stats.totalContinents}
+            Continents: {stats.totalContinents}
           </div>
           <div data-testid="stat-countries">
-            Total countries visited: {stats.totalCountries}
+            Countries: {stats.totalCountries}
           </div>
         </div>
       </div>
