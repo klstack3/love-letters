@@ -49,11 +49,11 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
         map.current.on('style.load', () => {
           if (!map.current) return;
 
-          // Set atmospheric effects with white halo
+          // Set atmospheric effects with subtle white halo
           map.current.setFog({
-            color: 'rgb(40, 40, 45)',
-            'high-color': 'rgb(80, 80, 90)',
-            'horizon-blend': 0.1,
+            color: 'rgb(20, 20, 25)',
+            'high-color': 'rgb(40, 40, 50)',
+            'horizon-blend': 0.08,
             'space-color': 'rgb(0, 0, 5)',
             'star-intensity': 0.9
           });
@@ -230,7 +230,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.15) 0%, rgba(200, 200, 210, 0.08) 40%, transparent 60%)',
+          background: 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06) 0%, rgba(200, 200, 210, 0.03) 40%, transparent 60%)',
         }}
       />
       
@@ -246,7 +246,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
       <div 
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 70%)',
           animation: 'shimmer 8s ease-in-out infinite',
         }}
       />
