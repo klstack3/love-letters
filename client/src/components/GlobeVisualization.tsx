@@ -152,12 +152,17 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add country labels with distance-based fade
+          // Add country labels with distance-based fade and deduplication
           map.current.addLayer({
             id: 'country-labels',
             type: 'symbol',
             source: 'countries',
             'source-layer': 'country_boundaries',
+            filter: [
+              'all',
+              ['==', ['get', 'worldview'], 'all'],
+              ['!=', ['get', 'disputed'], 'true']
+            ],
             layout: {
               'text-field': ['get', 'name_en'],
               'text-size': 12,
@@ -167,9 +172,9 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'text-max-angle': 45,
               'symbol-placement': 'point',
               'text-allow-overlap': false,
-              'text-ignore-placement': false,
-              'symbol-avoid-edges': true,
-              'text-optional': true
+              'symbol-spacing': 1000,
+              'text-padding': 100,
+              'symbol-z-order': 'auto'
             },
             paint: {
               'text-color': [
