@@ -9,6 +9,7 @@ export interface RouteData {
   color: [string, string];
   date: string;
   meetup: boolean;
+  person: string;
 }
 
 interface GlobeVisualizationProps {
@@ -19,6 +20,8 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [hoveredLocation, setHoveredLocation] = useState<{ name: string; distance: number; x: number; y: number } | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -263,6 +266,193 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             hoveredCountryId = null;
             map.current.getCanvas().style.cursor = '';
           });
+
+          // Add route lines and markers
+          const calculateDistance = (coord1: [number, number], coord2: [number, number]): number => {
+            const R = 6371; // Earth's radius in km
+            const lat1 = coord1[1] * Math.PI / 180;
+            const lat2 = coord2[1] * Math.PI / 180;
+            const dLat = (coord2[1] - coord1[1]) * Math.PI / 180;
+            const dLon = (coord2[0] - coord1[0]) * Math.PI / 180;
+
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1) * Math.cos(lat2) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return Math.round(R * c);
+          };
+
+          // Create route lines with gradient
+          routes.forEach((route, index) => {
+            if (!map.current) return;
+
+            const distance = calculateDistance(route.coords[0], route.coords[1]);
+
+            // Add route line source
+            map.current.addSource(`route-${index}`, {
+              type: 'geojson',
+              lineMetrics: true,
+              data: {
+                type: 'Feature',
+                properties: { distance, from: route.from, to: route.to },
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [route.coords[0], route.coords[1]]
+                }
+              }
+            });
+
+            // Add pulsing line layer
+            map.current.addLayer({
+              id: `route-line-${index}`,
+              type: 'line',
+              source: `route-${index}`,
+              paint: {
+                'line-color': route.color[0],
+                'line-width': 2,
+                'line-opacity': 0.6,
+                'line-gradient': [
+                  'interpolate',
+                  ['linear'],
+                  ['line-progress'],
+                  0, route.color[0],
+                  1, route.color[1]
+                ]
+              },
+              layout: {
+                'line-cap': 'round',
+                'line-join': 'round'
+              }
+            });
+
+            // Add pulsing animation layer
+            map.current.addLayer({
+              id: `route-pulse-${index}`,
+              type: 'line',
+              source: `route-${index}`,
+              paint: {
+                'line-color': route.color[1],
+                'line-width': 3,
+                'line-opacity': 0.4,
+                'line-blur': 2
+              },
+              layout: {
+                'line-cap': 'round',
+                'line-join': 'round'
+              }
+            });
+          });
+
+          // Add location markers
+          const addedLocations = new Set<string>();
+          
+          routes.forEach((route) => {
+            if (!map.current) return;
+
+            const distance = calculateDistance(route.coords[0], route.coords[1]);
+
+            // Add origin marker
+            const originKey = `${route.coords[0][0]},${route.coords[0][1]}`;
+            if (!addedLocations.has(originKey)) {
+              addedLocations.add(originKey);
+              
+              const originEl = document.createElement('div');
+              originEl.className = 'location-marker';
+              originEl.style.cssText = `
+                width: 10px;
+                height: 10px;
+                background: ${route.color[0]};
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                box-shadow: 0 0 10px ${route.color[0]}80;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              `;
+              originEl.dataset.location = route.from;
+              originEl.dataset.distance = distance.toString();
+
+              const originMarker = new mapboxgl.Marker({ element: originEl })
+                .setLngLat(route.coords[0])
+                .addTo(map.current);
+              
+              markersRef.current.push(originMarker);
+            }
+
+            // Add destination marker
+            const destKey = `${route.coords[1][0]},${route.coords[1][1]}`;
+            if (!addedLocations.has(destKey)) {
+              addedLocations.add(destKey);
+              
+              const destEl = document.createElement('div');
+              destEl.className = 'location-marker';
+              destEl.style.cssText = `
+                width: 10px;
+                height: 10px;
+                background: ${route.color[1]};
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                box-shadow: 0 0 10px ${route.color[1]}80;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              `;
+              destEl.dataset.location = route.to;
+              destEl.dataset.distance = distance.toString();
+
+              const destMarker = new mapboxgl.Marker({ element: destEl })
+                .setLngLat(route.coords[1])
+                .addTo(map.current);
+              
+              markersRef.current.push(destMarker);
+            }
+          });
+
+          // Add hover interactions for markers
+          document.addEventListener('mouseover', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('location-marker')) {
+              target.style.transform = 'scale(1.5)';
+              target.style.boxShadow = `0 0 20px ${target.style.background}`;
+              
+              const rect = target.getBoundingClientRect();
+              setHoveredLocation({
+                name: target.dataset.location || '',
+                distance: parseInt(target.dataset.distance || '0'),
+                x: rect.left + rect.width / 2,
+                y: rect.top
+              });
+            }
+          });
+
+          document.addEventListener('mouseout', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('location-marker')) {
+              target.style.transform = 'scale(1)';
+              target.style.boxShadow = `0 0 10px ${target.style.background}80`;
+              setHoveredLocation(null);
+            }
+          });
+
+          // Animate pulse effect
+          let pulseOffset = 0;
+          const animatePulse = () => {
+            if (!map.current) return;
+            
+            pulseOffset = (pulseOffset + 0.01) % 1;
+            
+            routes.forEach((_, index) => {
+              if (map.current?.getLayer(`route-pulse-${index}`)) {
+                map.current.setPaintProperty(
+                  `route-pulse-${index}`,
+                  'line-dasharray',
+                  [0, pulseOffset * 2, 2 - pulseOffset * 2]
+                );
+              }
+            });
+            
+            requestAnimationFrame(animatePulse);
+          };
+          animatePulse();
         });
       } catch (error) {
         console.error('Failed to initialize map:', error);
@@ -272,10 +462,12 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
     initMap();
 
     return () => {
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
       map.current?.remove();
       map.current = null;
     };
-  }, []);
+  }, [routes]);
 
   return (
     <div className="relative w-full h-screen bg-[#000005] overflow-hidden" data-testid="globe-container">
@@ -303,6 +495,25 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           animation: 'shimmer 8s ease-in-out infinite',
         }}
       />
+
+      {/* Distance tooltip */}
+      {hoveredLocation && (
+        <div
+          className="absolute pointer-events-none z-50"
+          style={{
+            left: `${hoveredLocation.x}px`,
+            top: `${hoveredLocation.y - 60}px`,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <div className="bg-black/90 text-white px-3 py-2 rounded-lg border border-white/20 backdrop-blur-sm">
+            <div className="text-sm font-medium">{hoveredLocation.name}</div>
+            <div className="text-xs text-white/70 mt-1">
+              {hoveredLocation.distance.toLocaleString()} km
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes shimmer {

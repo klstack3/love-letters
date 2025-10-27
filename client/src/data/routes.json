@@ -1,34 +1,74 @@
 [
   {
-    "from": "London",
-    "to": "Kelowna",
-    "coords": [[-0.1276, 51.5072], [-119.4960, 49.8879]],
-    "color": ["#00ffc3", "#ff4d94"],
-    "date": "2023-06-15",
-    "meetup": true
-  },
-  {
-    "from": "New York",
-    "to": "Kelowna",
-    "coords": [[-74.0060, 40.7128], [-119.4960, 49.8879]],
-    "color": ["#ff4d94", "#00ffc3"],
-    "date": "2023-06-18",
-    "meetup": true
-  },
-  {
-    "from": "Kelowna",
-    "to": "London",
-    "coords": [[-119.4960, 49.8879], [-0.1276, 51.5072]],
-    "color": ["#00ffc3", "#ff4d94"],
-    "date": "2023-09-10",
+    "from": "London, UK",
+    "to": "Kelowna, BC, Canada",
+    "coords": [[-0.1276, 51.5074], [-119.4960, 49.8880]],
+    "color": ["#9caf88", "#b8c9a8"],
+    "person": "Y",
+    "date": "2024",
     "meetup": false
   },
   {
-    "from": "London",
-    "to": "New York",
-    "coords": [[-0.1276, 51.5072], [-74.0060, 40.7128]],
-    "color": ["#ff4d94", "#00ffc3"],
-    "date": "2024-03-04",
-    "meetup": true
+    "from": "London, UK",
+    "to": "New York, NY, USA",
+    "coords": [[-0.1276, 51.5074], [-74.0060, 40.7128]],
+    "color": ["#9caf88", "#b8c9a8"],
+    "person": "Y",
+    "date": "2024",
+    "meetup": false
+  },
+  {
+    "from": "London, UK",
+    "to": "Goa, India",
+    "coords": [[-0.1276, 51.5074], [73.8278, 15.2993]],
+    "color": ["#9caf88", "#b8c9a8"],
+    "person": "Y",
+    "date": "2024",
+    "meetup": false
+  },
+  {
+    "from": "London, UK",
+    "to": "Colorado, USA",
+    "coords": [[-0.1276, 51.5074], [-104.9903, 39.7392]],
+    "color": ["#9caf88", "#b8c9a8"],
+    "person": "Y",
+    "date": "2024",
+    "meetup": false
+  },
+  {
+    "from": "New York, NY, USA",
+    "to": "Kelowna, BC, Canada",
+    "coords": [[-74.0060, 40.7128], [-119.4960, 49.8880]],
+    "color": ["#d4a5a5", "#e6c0c0"],
+    "person": "K",
+    "date": "2024",
+    "meetup": false
+  },
+  {
+    "from": "Haliburton, ON, Canada",
+    "to": "New York, NY, USA",
+    "coords": [[-78.5181, 45.0482], [-74.0060, 40.7128]],
+    "color": ["#d4a5a5", "#e6c0c0"],
+    "person": "K",
+    "date": "2024",
+    "meetup": false
+  },
+  {
+    "from": "Haliburton, ON, Canada",
+    "to": "Goa, India",
+    "coords": [[-78.5181, 45.0482], [73.8278, 15.2993]],
+    "color": ["#d4a5a5", "#e6c0c0"],
+    "person": "K",
+    "date": "2024",
+    "meetup": false
+  },
+  {
+    "from": "Haliburton, ON, Canada",
+    "to": "Colorado, USA",
+    "coords": [[-78.5181, 45.0482], [-104.9903, 39.7392]],
+    "color": ["#d4a5a5", "#e6c0c0"],
+    "person": "K",
+    "date": "2024",
+    "meetup": false
   }
 ]
