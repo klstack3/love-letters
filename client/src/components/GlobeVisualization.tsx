@@ -450,6 +450,9 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
                 transition: transform 0.3s ease;
                 pointer-events: all;
                 transform-origin: center bottom;
+                background: transparent;
+                border: none;
+                outline: none;
               `;
               
               // SVG pin icon
