@@ -99,7 +99,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add gradient overlay for hover with brighter white
+          // Add blue/white gradient overlay for hover
           map.current.addLayer({
             id: 'country-hover-gradient',
             type: 'fill',
@@ -109,13 +109,13 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'fill-color': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
-                '#ffffff',
+                '#c8e0ff',
                 'transparent'
               ],
               'fill-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
-                0.25,
+                0.3,
                 0
               ]
             }
