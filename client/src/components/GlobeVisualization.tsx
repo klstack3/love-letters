@@ -117,7 +117,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           style: 'mapbox://styles/mapbox/dark-v11',
           projection: { name: 'globe' },
           center: [-30, 30],
-          zoom: 1.5,
+          zoom: 2.5,
           pitch: 0,
           dragRotate: true,
           interactive: true,
