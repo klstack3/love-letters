@@ -164,7 +164,12 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
               'text-pitch-alignment': 'map',
               'text-rotation-alignment': 'map',
-              'text-max-angle': 45
+              'text-max-angle': 45,
+              'symbol-placement': 'point',
+              'text-allow-overlap': false,
+              'text-ignore-placement': false,
+              'symbol-avoid-edges': true,
+              'text-optional': true
             },
             paint: {
               'text-color': [
