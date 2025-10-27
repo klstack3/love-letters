@@ -172,9 +172,8 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'text-max-angle': 45,
               'symbol-placement': 'point',
               'text-allow-overlap': false,
-              'symbol-spacing': 1000,
-              'text-padding': 100,
-              'symbol-z-order': 'auto'
+              'symbol-spacing': 250,
+              'text-padding': 10
             },
             paint: {
               'text-color': [
@@ -186,10 +185,17 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'text-halo-color': '#000000',
               'text-halo-width': 1,
               'text-opacity': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                1,
-                ['coalesce', ['feature-state', 'opacity'], 0.7]
+                'interpolate',
+                ['linear'],
+                ['coalesce', ['feature-state', 'opacity'], 0.7],
+                0, 0,
+                0.7, [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  1,
+                  0.7
+                ],
+                1, 1
               ]
             }
           });
