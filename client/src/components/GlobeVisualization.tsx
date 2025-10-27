@@ -348,8 +348,9 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               paint: {
                 'line-color': route.color[1],
                 'line-width': 3,
-                'line-opacity': 0.4,
-                'line-blur': 2
+                'line-opacity': 0.5,
+                'line-blur': 2,
+                'line-dasharray': [0, 2, 1]
               },
               layout: {
                 'line-cap': 'round',
@@ -410,27 +411,48 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               markersRef.current.push(originMarker);
             }
 
-            // Add destination marker
+            // Add destination marker (map pin icon)
             const destKey = `${route.coords[1][0]},${route.coords[1][1]}`;
             if (!addedLocations.has(destKey)) {
               addedLocations.add(destKey);
               
               const destEl = document.createElement('div');
-              destEl.className = 'location-marker';
+              destEl.className = 'location-marker location-pin';
               destEl.style.cssText = `
-                width: 10px;
-                height: 10px;
-                background: ${route.color[1]};
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-radius: 50%;
-                box-shadow: 0 0 10px ${route.color[1]}80;
+                width: 20px;
+                height: 20px;
+                position: relative;
                 cursor: pointer;
                 transition: all 0.3s ease;
+              `;
+              destEl.innerHTML = `
+                <div style="
+                  width: 16px;
+                  height: 16px;
+                  background: ${route.color[1]};
+                  border: 2px solid rgba(255, 255, 255, 0.4);
+                  border-radius: 50% 50% 50% 0;
+                  transform: rotate(-45deg);
+                  box-shadow: 0 0 12px ${route.color[1]}80;
+                  position: absolute;
+                  top: 0;
+                  left: 2px;
+                "></div>
+                <div style="
+                  width: 6px;
+                  height: 6px;
+                  background: rgba(0, 0, 0, 0.3);
+                  border-radius: 50%;
+                  position: absolute;
+                  top: 3px;
+                  left: 7px;
+                  transform: rotate(-45deg);
+                "></div>
               `;
               destEl.dataset.locationKey = destKey;
               destEl.dataset.locationName = route.to;
 
-              const destMarker = new mapboxgl.Marker({ element: destEl })
+              const destMarker = new mapboxgl.Marker({ element: destEl, anchor: 'bottom' })
                 .setLngLat(route.coords[1])
                 .addTo(map.current);
               
@@ -468,25 +490,19 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Animate continuous pulse effect
-          let pulseOffset = 0;
+          // Animate continuous pulse effect with flowing dashes
+          let dashOffset = 0;
           const animatePulse = () => {
             if (!map.current) return;
             
-            pulseOffset = (pulseOffset + 0.005);
+            dashOffset = (dashOffset + 0.03) % 3;
             
             routes.forEach((_, index) => {
               if (map.current?.getLayer(`route-pulse-${index}`)) {
-                // Create continuous flowing dash pattern
                 map.current.setPaintProperty(
                   `route-pulse-${index}`,
                   'line-dasharray',
-                  [0.5, 1.5, 0.5]
-                );
-                map.current.setPaintProperty(
-                  `route-pulse-${index}`,
-                  'line-offset',
-                  Math.sin(pulseOffset) * 0.5
+                  [0, 2 - dashOffset, 1 + dashOffset]
                 );
               }
             });
@@ -550,9 +566,18 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           <div className="bg-black/90 text-white px-3 py-2 rounded-lg border border-white/20 backdrop-blur-sm">
             <div className="text-sm font-medium mb-2">{hoveredLocation.name}</div>
             {hoveredLocation.routes.map((route, idx) => (
-              <div key={idx} className="text-xs mt-1" style={{ color: route.color }}>
-                <span className="font-medium">{route.person}:</span> {route.from} → {route.distance.toLocaleString()} km
-                <div className="text-white/60 text-[10px]">{route.date}</div>
+              <div key={idx} className="text-xs mt-1 flex items-start gap-2">
+                <div 
+                  className="w-3 h-3 mt-0.5 flex-shrink-0"
+                  style={{ 
+                    backgroundColor: route.color,
+                    boxShadow: `0 0 4px ${route.color}`
+                  }} 
+                />
+                <div className="flex-1">
+                  <div className="text-white/90">{route.from} → {route.distance.toLocaleString()} km</div>
+                  <div className="text-white/60 text-[10px]">{route.date}</div>
+                </div>
               </div>
             ))}
           </div>
