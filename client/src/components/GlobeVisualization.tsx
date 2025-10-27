@@ -24,6 +24,40 @@ interface LocationRoute {
   color: string;
 }
 
+// Helper function to calculate distance using Haversine formula
+function calculateDistance(coord1: [number, number], coord2: [number, number]): number {
+  const R = 6371; // Earth's radius in km
+  const lat1 = coord1[1] * Math.PI / 180;
+  const lat2 = coord2[1] * Math.PI / 180;
+  const dLat = (coord2[1] - coord1[1]) * Math.PI / 180;
+  const dLon = (coord2[0] - coord1[0]) * Math.PI / 180;
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return Math.round(R * c);
+}
+
+// Mapping of destinations to continents
+const destinationToContinent: Record<string, string> = {
+  'Kelowna, BC, Canada': 'North America',
+  'New York, NY, USA': 'North America',
+  'Colorado, USA': 'North America',
+  'Goa, India': 'Asia',
+  'London, UK': 'Europe',
+};
+
+// Mapping of destinations to countries
+const destinationToCountry: Record<string, string> = {
+  'Kelowna, BC, Canada': 'Canada',
+  'New York, NY, USA': 'USA',
+  'Colorado, USA': 'USA',
+  'Goa, India': 'India',
+  'London, UK': 'UK',
+};
+
 export default function GlobeVisualization({ routes }: GlobeVisualizationProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -36,6 +70,32 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
   } | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const locationRoutesRef = useRef<Map<string, LocationRoute[]>>(new Map());
+
+  // Calculate statistics
+  const stats = (() => {
+    let totalDistance = 0;
+    const continents = new Set<string>();
+    const countries = new Set<string>();
+
+    routes.forEach(route => {
+      // Calculate and add distance
+      const distance = calculateDistance(route.coords[0], route.coords[1]);
+      totalDistance += distance;
+
+      // Add continent and country from destination
+      const continent = destinationToContinent[route.to];
+      const country = destinationToCountry[route.to];
+      
+      if (continent) continents.add(continent);
+      if (country) countries.add(country);
+    });
+
+    return {
+      totalDistance,
+      totalContinents: continents.size,
+      totalCountries: countries.size,
+    };
+  })();
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -590,6 +650,24 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           </div>
         </div>
       )}
+
+      {/* Statistics panel - bottom left */}
+      <div 
+        className="absolute bottom-6 left-6 z-50 pointer-events-none"
+        data-testid="stats-panel"
+      >
+        <div className="text-white font-mono text-sm space-y-1">
+          <div data-testid="stat-distance">
+            Total distance travelled: {stats.totalDistance.toLocaleString()} km
+          </div>
+          <div data-testid="stat-continents">
+            Total continents visited: {stats.totalContinents}
+          </div>
+          <div data-testid="stat-countries">
+            Total countries visited: {stats.totalCountries}
+          </div>
+        </div>
+      </div>
 
       <style>{`
         @keyframes shimmer {
