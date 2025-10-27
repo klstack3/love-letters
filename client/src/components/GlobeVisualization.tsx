@@ -391,6 +391,8 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               
               const originEl = document.createElement('div');
               originEl.className = 'location-marker';
+              originEl.dataset.locationKey = originKey;
+              originEl.dataset.locationName = route.from;
               originEl.style.cssText = `
                 width: 10px;
                 height: 10px;
@@ -400,9 +402,30 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
                 box-shadow: 0 0 10px ${route.color[0]}80;
                 cursor: pointer;
                 transition: all 0.3s ease;
+                pointer-events: all;
               `;
-              originEl.dataset.locationKey = originKey;
-              originEl.dataset.locationName = route.from;
+              
+              // Add hover handlers directly
+              originEl.addEventListener('mouseenter', () => {
+                originEl.style.transform = 'scale(1.5)';
+                originEl.style.boxShadow = `0 0 20px ${route.color[0]}`;
+                
+                const locationRoutes = locationRoutesRef.current.get(originKey) || [];
+                const rect = originEl.getBoundingClientRect();
+                
+                setHoveredLocation({
+                  name: route.from,
+                  routes: locationRoutes,
+                  x: rect.left + rect.width / 2,
+                  y: rect.top
+                });
+              });
+              
+              originEl.addEventListener('mouseleave', () => {
+                originEl.style.transform = 'scale(1)';
+                originEl.style.boxShadow = `0 0 10px ${route.color[0]}80`;
+                setHoveredLocation(null);
+              });
 
               const originMarker = new mapboxgl.Marker({ element: originEl })
                 .setLngLat(route.coords[0])
@@ -418,75 +441,76 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               
               const destEl = document.createElement('div');
               destEl.className = 'location-marker location-pin';
+              destEl.dataset.locationKey = destKey;
+              destEl.dataset.locationName = route.to;
               destEl.style.cssText = `
-                width: 20px;
-                height: 20px;
+                width: 24px;
+                height: 30px;
                 position: relative;
                 cursor: pointer;
                 transition: all 0.3s ease;
+                pointer-events: all;
               `;
-              destEl.innerHTML = `
-                <div style="
-                  width: 16px;
-                  height: 16px;
-                  background: ${route.color[1]};
-                  border: 2px solid rgba(255, 255, 255, 0.4);
-                  border-radius: 50% 50% 50% 0;
-                  transform: rotate(-45deg);
-                  box-shadow: 0 0 12px ${route.color[1]}80;
-                  position: absolute;
-                  top: 0;
-                  left: 2px;
-                "></div>
-                <div style="
-                  width: 6px;
-                  height: 6px;
-                  background: rgba(0, 0, 0, 0.3);
-                  border-radius: 50%;
-                  position: absolute;
-                  top: 3px;
-                  left: 7px;
-                  transform: rotate(-45deg);
-                "></div>
+              
+              // Pin body
+              const pinBody = document.createElement('div');
+              pinBody.style.cssText = `
+                width: 18px;
+                height: 18px;
+                background: ${route.color[1]};
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                box-shadow: 0 0 12px ${route.color[1]}80;
+                position: absolute;
+                top: 2px;
+                left: 3px;
+                pointer-events: none;
               `;
-              destEl.dataset.locationKey = destKey;
-              destEl.dataset.locationName = route.to;
+              
+              // Pin inner dot
+              const pinDot = document.createElement('div');
+              pinDot.style.cssText = `
+                width: 6px;
+                height: 6px;
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 50%;
+                position: absolute;
+                top: 8px;
+                left: 9px;
+                pointer-events: none;
+              `;
+              
+              destEl.appendChild(pinBody);
+              destEl.appendChild(pinDot);
+              
+              // Add hover handlers directly
+              destEl.addEventListener('mouseenter', () => {
+                destEl.style.transform = 'scale(1.3)';
+                pinBody.style.boxShadow = `0 0 20px ${route.color[1]}`;
+                
+                const locationRoutes = locationRoutesRef.current.get(destKey) || [];
+                const rect = destEl.getBoundingClientRect();
+                
+                setHoveredLocation({
+                  name: route.to,
+                  routes: locationRoutes,
+                  x: rect.left + rect.width / 2,
+                  y: rect.top
+                });
+              });
+              
+              destEl.addEventListener('mouseleave', () => {
+                destEl.style.transform = 'scale(1)';
+                pinBody.style.boxShadow = `0 0 12px ${route.color[1]}80`;
+                setHoveredLocation(null);
+              });
 
               const destMarker = new mapboxgl.Marker({ element: destEl, anchor: 'bottom' })
                 .setLngLat(route.coords[1])
                 .addTo(map.current);
               
               markersRef.current.push(destMarker);
-            }
-          });
-
-          // Add hover interactions for markers
-          document.addEventListener('mouseover', (e) => {
-            const target = e.target as HTMLElement;
-            if (target.classList.contains('location-marker')) {
-              target.style.transform = 'scale(1.5)';
-              target.style.boxShadow = `0 0 20px ${target.style.background}`;
-              
-              const locationKey = target.dataset.locationKey || '';
-              const locationName = target.dataset.locationName || '';
-              const locationRoutes = locationRoutesRef.current.get(locationKey) || [];
-              
-              const rect = target.getBoundingClientRect();
-              setHoveredLocation({
-                name: locationName,
-                routes: locationRoutes,
-                x: rect.left + rect.width / 2,
-                y: rect.top
-              });
-            }
-          });
-
-          document.addEventListener('mouseout', (e) => {
-            const target = e.target as HTMLElement;
-            if (target.classList.contains('location-marker')) {
-              target.style.transform = 'scale(1)';
-              target.style.boxShadow = `0 0 10px ${target.style.background}80`;
-              setHoveredLocation(null);
             }
           });
 
