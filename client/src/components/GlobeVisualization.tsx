@@ -212,40 +212,120 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Add country labels directly from vector tiles
-          // Use symbol-placement and symbol-sort-key to reduce duplicates
-          map.current.addLayer({
-            id: 'country-labels',
-            type: 'symbol',
-            source: 'countries',
-            'source-layer': 'country_boundaries',
-            layout: {
-              'text-field': ['get', 'name_en'],
-              'text-size': 12,
-              'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-              'text-allow-overlap': false,
-              'symbol-placement': 'point',
-              'symbol-sort-key': ['get', 'min_zoom'], // Prioritize important countries
-              'text-max-width': 8
-            },
-            paint: {
-              'text-color': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                '#ffffff',
-                '#556677'
-              ],
-              'text-halo-color': '#000000',
-              'text-halo-width': 1,
-              'text-opacity': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                1.0,
-                ['boolean', ['feature-state', 'hideForHover'], false],
-                0,
-                ['coalesce', ['feature-state', 'opacity'], 0.7]
-              ]
-            }
+          // Wait for country tiles to load, then create deduplicated label source
+          let centroidsCreated = false;
+          
+          map.current.on('sourcedata', (e) => {
+            if (!map.current || centroidsCreated) return;
+            if (e.sourceId !== 'countries' || !e.isSourceLoaded) return;
+            
+            // Query all country features now that tiles are loaded
+            const allFeatures = map.current.querySourceFeatures('countries', {
+              sourceLayer: 'country_boundaries'
+            });
+            
+            if (allFeatures.length === 0) return;
+            
+            console.log('Tiles loaded, creating country centroids from', allFeatures.length, 'features');
+            
+            // Deduplicate by iso_3166_1 and compute centroids
+            const countryMap = new Map<string, { name: string; bounds?: number[]; coords: [number, number] }>();
+            
+            allFeatures.forEach((feature) => {
+              const countryId = feature.properties?.iso_3166_1;
+              const countryName = feature.properties?.name_en;
+              const bounds = feature.properties?.bounds;
+              
+              if (!countryId || !countryName) return;
+              
+              if (!countryMap.has(countryId)) {
+                // Use bounds center if available
+                let lng = 0;
+                let lat = 0;
+                
+                if (bounds && Array.isArray(bounds) && bounds.length === 4) {
+                  lng = (bounds[0] + bounds[2]) / 2;
+                  lat = (bounds[1] + bounds[3]) / 2;
+                } else {
+                  // Fallback: approximate from geometry
+                  if (feature.geometry.type === 'Polygon') {
+                    const coords = (feature.geometry as any).coordinates[0];
+                    if (coords && coords.length > 0) {
+                      lng = coords[Math.floor(coords.length / 2)][0];
+                      lat = coords[Math.floor(coords.length / 2)][1];
+                    }
+                  } else if (feature.geometry.type === 'MultiPolygon') {
+                    const coords = (feature.geometry as any).coordinates[0][0];
+                    if (coords && coords.length > 0) {
+                      lng = coords[Math.floor(coords.length / 2)][0];
+                      lat = coords[Math.floor(coords.length / 2)][1];
+                    }
+                  }
+                }
+                
+                countryMap.set(countryId, { name: countryName, bounds, coords: [lng, lat] });
+              }
+            });
+            
+            console.log('Created', countryMap.size, 'unique country centroids');
+            
+            // Build GeoJSON features
+            const centroidFeatures = Array.from(countryMap.entries()).map(([countryId, data]) => ({
+              type: 'Feature' as const,
+              id: countryId,
+              properties: {
+                name: data.name,
+                countryId
+              },
+              geometry: {
+                type: 'Point' as const,
+                coordinates: data.coords
+              }
+            }));
+            
+            // Add deduplicated centroid source
+            map.current?.addSource('country-centroids', {
+              type: 'geojson',
+              data: {
+                type: 'FeatureCollection',
+                features: centroidFeatures
+              }
+            });
+            
+            // Add label layer from centroid source
+            map.current?.addLayer({
+              id: 'country-labels',
+              type: 'symbol',
+              source: 'country-centroids',
+              layout: {
+                'text-field': ['get', 'name'],
+                'text-size': 12,
+                'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+                'text-allow-overlap': false,
+                'text-max-width': 8
+              },
+              paint: {
+                'text-color': [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  '#ffffff',
+                  '#556677'
+                ],
+                'text-halo-color': '#000000',
+                'text-halo-width': 1,
+                'text-opacity': [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  1.0,
+                  ['boolean', ['feature-state', 'hideForHover'], false],
+                  0,
+                  ['coalesce', ['feature-state', 'opacity'], 0.7]
+                ]
+              }
+            });
+            
+            centroidsCreated = true;
+            console.log('Country label layer created successfully');
           });
           
           const nav = new mapboxgl.NavigationControl({
@@ -257,34 +337,21 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
 
           // Update label opacity based on distance from center
           const updateLabelOpacity = () => {
-            if (!map.current) return;
+            if (!map.current || !centroidsCreated) return;
             
             const center = map.current.getCenter();
             
-            // Query country label features from vector tiles
-            const labelFeatures = map.current.queryRenderedFeatures({
-              layers: ['country-labels']
-            });
+            // Query centroid features
+            const centroidFeatures = map.current.querySourceFeatures('country-centroids');
 
-            // Track which countries we've already processed
-            const processedCountries = new Set<string>();
+            centroidFeatures.forEach((feature) => {
+              const countryId = feature.id as string;
+              if (!countryId) return;
 
-            labelFeatures.forEach((feature) => {
-              const countryId = feature.properties?.iso_3166_1;
-              if (!countryId || processedCountries.has(countryId)) return;
-              
-              processedCountries.add(countryId);
-
-              // Get coordinates from the geometry
-              const bounds = feature.properties?.bounds;
-              let featureLng = center.lng;
-              let featureLat = center.lat;
-              
-              if (bounds) {
-                const [minLng, minLat, maxLng, maxLat] = bounds;
-                featureLng = (minLng + maxLng) / 2;
-                featureLat = (minLat + maxLat) / 2;
-              }
+              // Get coordinates from the point geometry
+              const coords = (feature.geometry as any).coordinates;
+              const featureLng = coords[0];
+              const featureLat = coords[1];
 
               // Calculate angular distance from center
               const dLng = Math.abs(featureLng - center.lng);
@@ -295,9 +362,9 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               const maxDistance = 90;
               const opacity = Math.max(0, Math.min(0.7, 0.7 * (1 - distance / maxDistance)));
 
-              // Set opacity on the country features
+              // Set opacity on centroid source for labels
               map.current?.setFeatureState(
-                { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
+                { source: 'country-centroids', id: countryId },
                 { opacity }
               );
             });
@@ -312,7 +379,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           let hoveredCountryId: string | null = null;
 
           map.current.on('mousemove', 'country-fills', (e) => {
-            if (!map.current) return;
+            if (!map.current || !centroidsCreated) return;
             
             if (e.features && e.features.length > 0) {
               const feature = e.features[0];
@@ -321,41 +388,47 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               if (!countryId) return;
               
               if (hoveredCountryId && hoveredCountryId !== countryId) {
-                // Clear hover from previous country
+                // Clear hover from previous country fill
                 map.current.setFeatureState(
                   { source: 'countries', sourceLayer: 'country_boundaries', id: hoveredCountryId },
+                  { hover: false }
+                );
+                // Clear hover from previous label
+                map.current.setFeatureState(
+                  { source: 'country-centroids', id: hoveredCountryId },
                   { hover: false }
                 );
               }
               
               hoveredCountryId = countryId;
               
-              // Set hover on country fill and labels
+              // Set hover on country fill
               map.current.setFeatureState(
                 { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
                 { hover: true }
               );
               
-              // Hide all other labels by querying rendered labels
-              const allLabelFeatures = map.current.queryRenderedFeatures({
-                layers: ['country-labels']
-              });
+              // Set hover on label (from centroid source)
+              map.current.setFeatureState(
+                { source: 'country-centroids', id: countryId },
+                { hover: true }
+              );
               
-              const processedCountries = new Set<string>();
+              // Hide all other labels from centroid source
+              const allCentroids = map.current.querySourceFeatures('country-centroids');
               
-              allLabelFeatures.forEach((f) => {
-                const cId = f.properties?.iso_3166_1;
-                if (!cId || processedCountries.has(cId)) return;
-                processedCountries.add(cId);
+              allCentroids.forEach((f) => {
+                const cId = f.id as string;
+                if (!cId) return;
                 
                 if (cId !== countryId) {
                   map.current?.setFeatureState(
-                    { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
+                    { source: 'country-centroids', id: cId },
                     { hideForHover: true }
                   );
                 } else {
                   map.current?.setFeatureState(
-                    { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
+                    { source: 'country-centroids', id: cId },
                     { hideForHover: false }
                   );
                 }
@@ -366,28 +439,29 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           });
 
           map.current.on('mouseleave', 'country-fills', () => {
-            if (!map.current || !hoveredCountryId) return;
+            if (!map.current || !hoveredCountryId || !centroidsCreated) return;
             
-            // Clear hover from country
+            // Clear hover from country fill
             map.current.setFeatureState(
               { source: 'countries', sourceLayer: 'country_boundaries', id: hoveredCountryId },
               { hover: false }
             );
             
-            // Clear hideForHover from ALL labels
-            const allLabelFeatures = map.current.queryRenderedFeatures({
-              layers: ['country-labels']
-            });
+            // Clear hover from label
+            map.current.setFeatureState(
+              { source: 'country-centroids', id: hoveredCountryId },
+              { hover: false }
+            );
             
-            const processedCountries = new Set<string>();
+            // Clear hideForHover from ALL centroids
+            const allCentroids = map.current.querySourceFeatures('country-centroids');
             
-            allLabelFeatures.forEach((f) => {
-              const cId = f.properties?.iso_3166_1;
-              if (!cId || processedCountries.has(cId)) return;
-              processedCountries.add(cId);
+            allCentroids.forEach((f) => {
+              const cId = f.id as string;
+              if (!cId) return;
               
               map.current?.setFeatureState(
-                { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
+                { source: 'country-centroids', id: cId },
                 { hideForHover: false }
               );
             });
