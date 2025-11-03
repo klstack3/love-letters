@@ -212,78 +212,21 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             }
           });
 
-          // Create custom label source with one point per country
-          // Query all country features and deduplicate to get one label per country
-          const allFeatures = map.current.querySourceFeatures('countries', {
-            sourceLayer: 'country_boundaries'
-          });
-
-          const countryLabels = new Map<string, { name: string; coords: [number, number]; id: string }>();
-
-          allFeatures.forEach((feature) => {
-            const countryId = feature.properties?.iso_3166_1;
-            const countryName = feature.properties?.name_en;
-            
-            if (!countryId || !countryName) return;
-            
-            // Only process if we haven't seen this country yet
-            if (!countryLabels.has(countryId)) {
-              // Calculate centroid for this feature
-              let lng = 0;
-              let lat = 0;
-              
-              if (feature.geometry.type === 'Polygon') {
-                const coords = (feature.geometry as any).coordinates[0];
-                if (coords && coords.length > 0) {
-                  // Use first coordinate as approximation
-                  lng = coords[Math.floor(coords.length / 2)][0];
-                  lat = coords[Math.floor(coords.length / 2)][1];
-                }
-              } else if (feature.geometry.type === 'MultiPolygon') {
-                const coords = (feature.geometry as any).coordinates[0][0];
-                if (coords && coords.length > 0) {
-                  lng = coords[Math.floor(coords.length / 2)][0];
-                  lat = coords[Math.floor(coords.length / 2)][1];
-                }
-              }
-              
-              countryLabels.set(countryId, { name: countryName, coords: [lng, lat], id: countryId });
-            }
-          });
-
-          // Create GeoJSON from unique countries
-          const labelFeatures = Array.from(countryLabels.values()).map(country => ({
-            type: 'Feature' as const,
-            id: country.id, // Add id for feature-state
-            properties: {
-              name: country.name,
-              countryId: country.id
-            },
-            geometry: {
-              type: 'Point' as const,
-              coordinates: country.coords
-            }
-          }));
-
-          // Add custom label source
-          map.current.addSource('country-label-points', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: labelFeatures
-            }
-          });
-
-          // Add country labels layer using the custom source
+          // Add country labels directly from vector tiles
+          // Use symbol-placement and symbol-sort-key to reduce duplicates
           map.current.addLayer({
             id: 'country-labels',
             type: 'symbol',
-            source: 'country-label-points',
+            source: 'countries',
+            'source-layer': 'country_boundaries',
             layout: {
-              'text-field': ['get', 'name'],
+              'text-field': ['get', 'name_en'],
               'text-size': 12,
               'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-              'text-allow-overlap': false
+              'text-allow-overlap': false,
+              'symbol-placement': 'point',
+              'symbol-sort-key': ['get', 'min_zoom'], // Prioritize important countries
+              'text-max-width': 8
             },
             paint: {
               'text-color': [
@@ -318,17 +261,30 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             
             const center = map.current.getCenter();
             
-            // Query our custom label features
-            const labelFeatures = map.current.querySourceFeatures('country-label-points');
+            // Query country label features from vector tiles
+            const labelFeatures = map.current.queryRenderedFeatures({
+              layers: ['country-labels']
+            });
+
+            // Track which countries we've already processed
+            const processedCountries = new Set<string>();
 
             labelFeatures.forEach((feature) => {
-              const countryId = feature.id as string;
-              if (!countryId) return;
+              const countryId = feature.properties?.iso_3166_1;
+              if (!countryId || processedCountries.has(countryId)) return;
+              
+              processedCountries.add(countryId);
 
-              // Get coordinates from the point geometry
-              const coords = (feature.geometry as any).coordinates;
-              const featureLng = coords[0];
-              const featureLat = coords[1];
+              // Get coordinates from the geometry
+              const bounds = feature.properties?.bounds;
+              let featureLng = center.lng;
+              let featureLat = center.lat;
+              
+              if (bounds) {
+                const [minLng, minLat, maxLng, maxLat] = bounds;
+                featureLng = (minLng + maxLng) / 2;
+                featureLat = (minLat + maxLat) / 2;
+              }
 
               // Calculate angular distance from center
               const dLng = Math.abs(featureLng - center.lng);
@@ -339,9 +295,9 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               const maxDistance = 90;
               const opacity = Math.max(0, Math.min(0.7, 0.7 * (1 - distance / maxDistance)));
 
-              // Set opacity on the label source
+              // Set opacity on the country features
               map.current?.setFeatureState(
-                { source: 'country-label-points', id: countryId },
+                { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
                 { opacity }
               );
             });
@@ -365,45 +321,41 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               if (!countryId) return;
               
               if (hoveredCountryId && hoveredCountryId !== countryId) {
-                // Clear hover from previous country (for fill)
+                // Clear hover from previous country
                 map.current.setFeatureState(
                   { source: 'countries', sourceLayer: 'country_boundaries', id: hoveredCountryId },
-                  { hover: false }
-                );
-                // Clear hover from previous label
-                map.current.setFeatureState(
-                  { source: 'country-label-points', id: hoveredCountryId },
                   { hover: false }
                 );
               }
               
               hoveredCountryId = countryId;
               
-              // Set hover on country fill
+              // Set hover on country fill and labels
               map.current.setFeatureState(
                 { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
                 { hover: true }
               );
               
-              // Set hover on country label
-              map.current.setFeatureState(
-                { source: 'country-label-points', id: countryId },
-                { hover: true }
-              );
+              // Hide all other labels by querying rendered labels
+              const allLabelFeatures = map.current.queryRenderedFeatures({
+                layers: ['country-labels']
+              });
               
-              // Hide all other labels
-              const allLabelFeatures = map.current.querySourceFeatures('country-label-points');
+              const processedCountries = new Set<string>();
               
               allLabelFeatures.forEach((f) => {
-                const cId = f.id as string;
-                if (cId && cId !== countryId) {
+                const cId = f.properties?.iso_3166_1;
+                if (!cId || processedCountries.has(cId)) return;
+                processedCountries.add(cId);
+                
+                if (cId !== countryId) {
                   map.current?.setFeatureState(
-                    { source: 'country-label-points', id: cId },
+                    { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
                     { hideForHover: true }
                   );
-                } else if (cId === countryId) {
+                } else {
                   map.current?.setFeatureState(
-                    { source: 'country-label-points', id: cId },
+                    { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
                     { hideForHover: false }
                   );
                 }
@@ -416,29 +368,28 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           map.current.on('mouseleave', 'country-fills', () => {
             if (!map.current || !hoveredCountryId) return;
             
-            // Clear hover from country fill
+            // Clear hover from country
             map.current.setFeatureState(
               { source: 'countries', sourceLayer: 'country_boundaries', id: hoveredCountryId },
               { hover: false }
             );
             
-            // Clear hover from label
-            map.current.setFeatureState(
-              { source: 'country-label-points', id: hoveredCountryId },
-              { hover: false }
-            );
-            
             // Clear hideForHover from ALL labels
-            const allLabelFeatures = map.current.querySourceFeatures('country-label-points');
+            const allLabelFeatures = map.current.queryRenderedFeatures({
+              layers: ['country-labels']
+            });
+            
+            const processedCountries = new Set<string>();
             
             allLabelFeatures.forEach((f) => {
-              const cId = f.id as string;
-              if (cId) {
-                map.current?.setFeatureState(
-                  { source: 'country-label-points', id: cId },
-                  { hideForHover: false }
-                );
-              }
+              const cId = f.properties?.iso_3166_1;
+              if (!cId || processedCountries.has(cId)) return;
+              processedCountries.add(cId);
+              
+              map.current?.setFeatureState(
+                { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
+                { hideForHover: false }
+              );
             });
             
             hoveredCountryId = null;
