@@ -172,7 +172,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             source: 'countries',
             'source-layer': 'country_boundaries',
             paint: {
-              'fill-color': '#050a14',
+              'fill-color': '#1a2332',
               'fill-opacity': 1
             }
           });
