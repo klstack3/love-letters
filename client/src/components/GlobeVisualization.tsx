@@ -229,41 +229,48 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
             console.log('Tiles loaded, creating country centroids from', allFeatures.length, 'features');
             
             // Deduplicate by iso_3166_1 and compute centroids
-            const countryMap = new Map<string, { name: string; bounds?: number[]; coords: [number, number] }>();
+            const countryMap = new Map<string, { name: string; coords: [number, number] }>();
             
             allFeatures.forEach((feature) => {
               const countryId = feature.properties?.iso_3166_1;
               const countryName = feature.properties?.name_en;
-              const bounds = feature.properties?.bounds;
               
               if (!countryId || !countryName) return;
               
               if (!countryMap.has(countryId)) {
-                // Use bounds center if available
+                // Calculate centroid from geometry
                 let lng = 0;
                 let lat = 0;
+                let totalPoints = 0;
                 
-                if (bounds && Array.isArray(bounds) && bounds.length === 4) {
-                  lng = (bounds[0] + bounds[2]) / 2;
-                  lat = (bounds[1] + bounds[3]) / 2;
-                } else {
-                  // Fallback: approximate from geometry
-                  if (feature.geometry.type === 'Polygon') {
-                    const coords = (feature.geometry as any).coordinates[0];
-                    if (coords && coords.length > 0) {
-                      lng = coords[Math.floor(coords.length / 2)][0];
-                      lat = coords[Math.floor(coords.length / 2)][1];
-                    }
-                  } else if (feature.geometry.type === 'MultiPolygon') {
-                    const coords = (feature.geometry as any).coordinates[0][0];
-                    if (coords && coords.length > 0) {
-                      lng = coords[Math.floor(coords.length / 2)][0];
-                      lat = coords[Math.floor(coords.length / 2)][1];
-                    }
+                if (feature.geometry.type === 'Polygon') {
+                  const ring = (feature.geometry as any).coordinates[0];
+                  if (ring && ring.length > 0) {
+                    // Average all points in the outer ring
+                    ring.forEach((coord: number[]) => {
+                      lng += coord[0];
+                      lat += coord[1];
+                      totalPoints++;
+                    });
+                  }
+                } else if (feature.geometry.type === 'MultiPolygon') {
+                  // For multi-polygon, use the first/largest polygon
+                  const firstPolygon = (feature.geometry as any).coordinates[0];
+                  if (firstPolygon && firstPolygon[0]) {
+                    const ring = firstPolygon[0];
+                    ring.forEach((coord: number[]) => {
+                      lng += coord[0];
+                      lat += coord[1];
+                      totalPoints++;
+                    });
                   }
                 }
                 
-                countryMap.set(countryId, { name: countryName, bounds, coords: [lng, lat] });
+                if (totalPoints > 0) {
+                  lng = lng / totalPoints;
+                  lat = lat / totalPoints;
+                  countryMap.set(countryId, { name: countryName, coords: [lng, lat] });
+                }
               }
             });
             
