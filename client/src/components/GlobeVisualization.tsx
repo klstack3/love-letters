@@ -237,8 +237,13 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               'text-halo-width': 1,
               'text-opacity': [
                 'case',
+                // If this country is being hovered, show it at full opacity
                 ['boolean', ['feature-state', 'hover'], false],
                 1.0,
+                // If hideForHover is true, hide this label (another country is hovered)
+                ['boolean', ['feature-state', 'hideForHover'], false],
+                0,
+                // Otherwise, use distance-based opacity
                 ['coalesce', ['feature-state', 'opacity'], 0.7]
               ]
             }
@@ -252,7 +257,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           map.current.addControl(nav, 'top-right');
 
           // Update label opacity based on distance from center
-          const updateLabelOpacity = (currentHoveredId?: string | null) => {
+          const updateLabelOpacity = () => {
             if (!map.current) return;
             
             const center = map.current.getCenter();
@@ -260,19 +265,15 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               sourceLayer: 'country_boundaries'
             });
 
+            // Track which countries we've already processed to avoid duplicates
+            const processedCountries = new Set<string>();
+
             features.forEach((feature) => {
               if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
                 const countryId = feature.properties?.iso_3166_1;
-                if (!countryId) return;
-
-                // If a country is being hovered, hide all other labels
-                if (currentHoveredId && countryId !== currentHoveredId) {
-                  map.current?.setFeatureState(
-                    { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
-                    { opacity: 0 }
-                  );
-                  return;
-                }
+                if (!countryId || processedCountries.has(countryId)) return;
+                
+                processedCountries.add(countryId);
 
                 // Get the center of the country (approximate)
                 const bounds = feature.properties;
@@ -306,8 +307,8 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           };
 
           // Update opacity on map move
-          map.current.on('move', () => updateLabelOpacity(hoveredCountryId));
-          map.current.on('zoom', () => updateLabelOpacity(hoveredCountryId));
+          map.current.on('move', updateLabelOpacity);
+          map.current.on('zoom', updateLabelOpacity);
           updateLabelOpacity(); // Initial update
 
           // Hover interaction for countries
@@ -335,8 +336,30 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
                 { hover: true }
               );
               
-              // Update label opacity to show only this country's label
-              updateLabelOpacity(hoveredCountryId);
+              // Set hideForHover on ALL countries to hide their labels
+              const allFeatures = map.current.querySourceFeatures('countries', {
+                sourceLayer: 'country_boundaries'
+              });
+              
+              const processedCountries = new Set<string>();
+              allFeatures.forEach((f) => {
+                const cId = f.properties?.iso_3166_1;
+                if (cId && !processedCountries.has(cId)) {
+                  processedCountries.add(cId);
+                  // Hide all labels except the hovered one
+                  if (cId !== countryId) {
+                    map.current?.setFeatureState(
+                      { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
+                      { hideForHover: true }
+                    );
+                  } else {
+                    map.current?.setFeatureState(
+                      { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
+                      { hideForHover: false }
+                    );
+                  }
+                }
+              });
               
               map.current.getCanvas().style.cursor = 'pointer';
             }
@@ -349,11 +372,25 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               { source: 'countries', sourceLayer: 'country_boundaries', id: hoveredCountryId },
               { hover: false }
             );
+            
+            // Clear hideForHover from ALL countries
+            const allFeatures = map.current.querySourceFeatures('countries', {
+              sourceLayer: 'country_boundaries'
+            });
+            
+            const processedCountries = new Set<string>();
+            allFeatures.forEach((f) => {
+              const cId = f.properties?.iso_3166_1;
+              if (cId && !processedCountries.has(cId)) {
+                processedCountries.add(cId);
+                map.current?.setFeatureState(
+                  { source: 'countries', sourceLayer: 'country_boundaries', id: cId },
+                  { hideForHover: false }
+                );
+              }
+            });
+            
             hoveredCountryId = null;
-            
-            // Restore all labels with distance-based opacity
-            updateLabelOpacity(null);
-            
             map.current.getCanvas().style.cursor = '';
           });
 
