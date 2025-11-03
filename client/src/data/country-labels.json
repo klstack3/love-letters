@@ -1,0 +1,245 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "US",
+      "properties": {
+        "name": "United States",
+        "iso": "US"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-98.5, 39.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "CA",
+      "properties": {
+        "name": "Canada",
+        "iso": "CA"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-106.3, 56.1]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "CN",
+      "properties": {
+        "name": "China",
+        "iso": "CN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [104.2, 35.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "JP",
+      "properties": {
+        "name": "Japan",
+        "iso": "JP"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [138.3, 36.2]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "MX",
+      "properties": {
+        "name": "Mexico",
+        "iso": "MX"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-102.5, 23.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RU",
+      "properties": {
+        "name": "Russia",
+        "iso": "RU"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [105.3, 61.5]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "BR",
+      "properties": {
+        "name": "Brazil",
+        "iso": "BR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-51.9, -14.2]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "AU",
+      "properties": {
+        "name": "Australia",
+        "iso": "AU"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [133.8, -25.3]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "IN",
+      "properties": {
+        "name": "India",
+        "iso": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [78.9, 20.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ZA",
+      "properties": {
+        "name": "South Africa",
+        "iso": "ZA"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [24.9, -28.5]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "GB",
+      "properties": {
+        "name": "United Kingdom",
+        "iso": "GB"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-3.4, 55.4]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "FR",
+      "properties": {
+        "name": "France",
+        "iso": "FR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [2.2, 46.2]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "DE",
+      "properties": {
+        "name": "Germany",
+        "iso": "DE"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.5, 51.2]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ES",
+      "properties": {
+        "name": "Spain",
+        "iso": "ES"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-3.7, 40.5]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "AR",
+      "properties": {
+        "name": "Argentina",
+        "iso": "AR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-63.6, -38.4]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "EG",
+      "properties": {
+        "name": "Egypt",
+        "iso": "EG"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [30.8, 26.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "KR",
+      "properties": {
+        "name": "South Korea",
+        "iso": "KR"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.8, 35.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ID",
+      "properties": {
+        "name": "Indonesia",
+        "iso": "ID"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [113.9, -0.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "SA",
+      "properties": {
+        "name": "Saudi Arabia",
+        "iso": "SA"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [45.1, 23.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "GL",
+      "properties": {
+        "name": "Greenland",
+        "iso": "GL"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-42.6, 71.7]
+      }
+    }
+  ]
+}
