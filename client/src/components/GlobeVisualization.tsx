@@ -252,7 +252,7 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           map.current.addControl(nav, 'top-right');
 
           // Update label opacity based on distance from center
-          const updateLabelOpacity = () => {
+          const updateLabelOpacity = (currentHoveredId?: string | null) => {
             if (!map.current) return;
             
             const center = map.current.getCenter();
@@ -264,6 +264,15 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
                 const countryId = feature.properties?.iso_3166_1;
                 if (!countryId) return;
+
+                // If a country is being hovered, hide all other labels
+                if (currentHoveredId && countryId !== currentHoveredId) {
+                  map.current?.setFeatureState(
+                    { source: 'countries', sourceLayer: 'country_boundaries', id: countryId },
+                    { opacity: 0 }
+                  );
+                  return;
+                }
 
                 // Get the center of the country (approximate)
                 const bounds = feature.properties;
@@ -297,8 +306,8 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
           };
 
           // Update opacity on map move
-          map.current.on('move', updateLabelOpacity);
-          map.current.on('zoom', updateLabelOpacity);
+          map.current.on('move', () => updateLabelOpacity(hoveredCountryId));
+          map.current.on('zoom', () => updateLabelOpacity(hoveredCountryId));
           updateLabelOpacity(); // Initial update
 
           // Hover interaction for countries
@@ -326,6 +335,9 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
                 { hover: true }
               );
               
+              // Update label opacity to show only this country's label
+              updateLabelOpacity(hoveredCountryId);
+              
               map.current.getCanvas().style.cursor = 'pointer';
             }
           });
@@ -338,6 +350,10 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               { hover: false }
             );
             hoveredCountryId = null;
+            
+            // Restore all labels with distance-based opacity
+            updateLabelOpacity(null);
+            
             map.current.getCanvas().style.cursor = '';
           });
 
