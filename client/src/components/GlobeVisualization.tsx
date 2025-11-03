@@ -281,9 +281,10 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
               const dLat = Math.abs(featureLat - center.lat);
               const distance = Math.sqrt(dLng * dLng + dLat * dLat);
 
-              // Map distance to opacity (0.7 at center, 0 at ~90 degrees away)
+              // Map distance to opacity (0.8 at center, 0.3 minimum even when far)
               const maxDistance = 90;
-              const opacity = Math.max(0, Math.min(0.7, 0.7 * (1 - distance / maxDistance)));
+              const fadeAmount = Math.min(1, distance / maxDistance);
+              const opacity = 0.8 - (fadeAmount * 0.5); // Fades from 0.8 to 0.3
 
               // Set opacity on label feature (use iso code as ID)
               map.current?.setFeatureState(
