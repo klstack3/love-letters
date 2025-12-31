@@ -30,34 +30,39 @@ A minimalist, visually stunning 3D globe visualization showing flight routes bet
 
 #### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - Mapbox account (free tier available)
 
 #### Local Development
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/klstack3/experiments.git
    cd experiments
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.production.example .env
    ```
-   
+
    Get your Mapbox access token from [Mapbox Account Dashboard](https://account.mapbox.com/access-tokens/) and update `.env`:
+
    ```env
    MAPBOX_ACCESS_TOKEN=pk.your_actual_mapbox_token_here
    ```
 
 4. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -70,6 +75,7 @@ A minimalist, visually stunning 3D globe visualization showing flight routes bet
 #### Deploy to Vercel
 
 1. **Deploy with Vercel**
+
    - Visit [vercel.com](https://vercel.com) and import your GitHub repository
    - Set environment variable: `MAPBOX_ACCESS_TOKEN=your_token_here`
    - Deploy automatically
@@ -84,7 +90,7 @@ A minimalist, visually stunning 3D globe visualization showing flight routes bet
 Love Letters prioritizes aesthetic beauty over explicit communication:
 
 - **Minimalist**: Clean, uncluttered interface
-- **Artistic**: Focus on visual poetry rather than data clarity  
+- **Artistic**: Focus on visual poetry rather than data clarity
 - **Personal**: Intimate visualization of shared journeys
 - **Interactive**: Engaging 3D exploration experience
 
@@ -99,6 +105,7 @@ A React-based web application that transforms user photos into professional head
 **Status**: Milestone 1 ✅ COMPLETE - Full React UI with TailwindCSS 3
 
 #### 🎯 Features
+
 - **Three Professional Styles**: Corporate Classic, Creative Professional, Executive Portrait
 - **Drag-and-Drop Upload**: Easy image upload with validation
 - **Side-by-Side Comparison**: Compare original vs generated headshots
@@ -106,6 +113,7 @@ A React-based web application that transforms user photos into professional head
 - **Step-by-Step Flow**: Intuitive 4-step user experience
 
 #### 🛠️ Tech Stack
+
 - **Frontend**: React 19, Vite 7, TailwindCSS 3
 - **Backend**: Express.js (planned for Milestone 2)
 - **AI**: Google Imagen 3 API (Nano Banana)
@@ -132,6 +140,7 @@ Visit `http://localhost:5173` to see the app in action!
 #### 🔗 Credits & Inspiration
 
 This project is inspired by the excellent tutorial from Creator Economy:
+
 - **Original Tutorial**: [Build an AI Headshot App with Google Nano Banana](https://creatoreconomy.so/p/full-tutorial-build-an-ai-headshot-app-with-google-nano-banana-in-15-minutes)
 
 ---
@@ -146,4 +155,4 @@ This is a public coding portfolio showcasing various experiments and learning pr
 
 ---
 
-*"Every route tells a story, every journey connects hearts across the globe."*
+_"Every route tells a story, every journey connects hearts across the globe."_
