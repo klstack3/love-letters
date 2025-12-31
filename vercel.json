@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server/index.ts",
-      "use": "@vercel/node"
+  "functions": {
+    "server/index.ts": {
+      "runtime": "@vercel/node@22.10.5"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -13,15 +12,13 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/client/index.html"
+      "dest": "/server/index.ts"
     }
   ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "./client/dist",
+  "installCommand": "npm install",
   "env": {
     "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
-    }
   }
 }
