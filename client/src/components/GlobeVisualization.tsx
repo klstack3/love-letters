@@ -603,24 +603,37 @@ export default function GlobeVisualization({ routes }: GlobeVisualizationProps) 
 
           // Animate continuous pulse effect with flowing dashes
           let dashOffset = 0;
-          const animatePulse = () => {
+          let lastTime = 0;
+          const animatePulse = (currentTime: number = 0) => {
             if (!map.current) return;
             
-            dashOffset = (dashOffset + 0.03) % 3;
+            // Throttle animation to ~30fps instead of 60fps for better performance
+            if (currentTime - lastTime < 33) {
+              requestAnimationFrame(animatePulse);
+              return;
+            }
+            lastTime = currentTime;
             
+            dashOffset = (dashOffset + 0.03) % 2;
+            
+            // Batch all map operations together
             routes.forEach((_, index) => {
-              if (map.current?.getLayer(`route-pulse-${index}`)) {
-                map.current.setPaintProperty(
-                  `route-pulse-${index}`,
-                  'line-dasharray',
-                  [0, 2 - dashOffset, 1 + dashOffset]
-                );
+              const layerId = `route-pulse-${index}`;
+              if (map.current?.getLayer(layerId)) {
+                // Ensure values are always positive
+                const gap = Math.max(0.1, 2 - dashOffset);
+                const dash = Math.max(0.1, 1 + dashOffset);
+                try {
+                  map.current.setPaintProperty(layerId, 'line-dasharray', [0, gap, dash]);
+                } catch (e) {
+                  // Ignore errors if layer is not ready
+                }
               }
             });
             
             requestAnimationFrame(animatePulse);
           };
-          animatePulse();
+          requestAnimationFrame(animatePulse);
         });
       } catch (error) {
         console.error('Failed to initialize map:', error);
