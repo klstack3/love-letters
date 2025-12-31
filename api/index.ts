@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { registerRoutes } from "../server/routes";
 import { setupVite, serveStatic } from "../server/vite";
+import { VercelRequest, VercelResponse } from "@vercel/node";
 
 const app = express();
 
@@ -33,5 +34,7 @@ if (process.env.NODE_ENV === "production") {
   setupVite(app);
 }
 
-// Export the Express app as a Vercel serverless function
-export default app;
+// Export a Vercel-compatible handler function
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  return app(req as any, res as any);
+}
