@@ -22,14 +22,14 @@ app.use(express.urlencoded({ extended: false }));
 // Configure Content Security Policy for Vite dev server and Mapbox
 app.use((req, res, next) => {
   res.setHeader(
-    'Content-Security-Policy',
+    "Content-Security-Policy",
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://api.mapbox.com; " +
-    "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com; " +
-    "img-src 'self' data: https: blob:; " +
-    "font-src 'self' https://api.mapbox.com https://fonts.gstatic.com; " +
-    "connect-src 'self' https://api.mapbox.com https://*.mapbox.com wss:; " +
-    "worker-src 'self' blob:;"
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://api.mapbox.com; " +
+      "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com; " +
+      "img-src 'self' data: https: blob:; " +
+      "font-src 'self' https://api.mapbox.com https://fonts.gstatic.com; " +
+      "connect-src 'self' https://api.mapbox.com https://*.mapbox.com wss:; " +
+      "worker-src 'self' blob:;"
   );
   next();
 });

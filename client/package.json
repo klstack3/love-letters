@@ -1,0 +1,8 @@
+{
+  "name": "love-letters-client",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "cd .. && vite build --outDir client/dist"
+  }
+}
