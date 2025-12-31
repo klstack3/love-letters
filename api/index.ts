@@ -33,4 +33,5 @@ if (process.env.NODE_ENV === "production") {
   setupVite(app);
 }
 
+// Export the Express app as a Vercel serverless function
 export default app;
