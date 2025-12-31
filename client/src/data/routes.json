@@ -5,8 +5,7 @@
     "coords": [[-0.1276, 51.5074], [-119.4960, 49.8880]],
     "color": ["#9caf88", "#b8c9a8"],
     "person": "Y",
-    "date": "June 2025",
-    "meetup": false
+    "date": "June 2025"
   },
   {
     "from": "London, UK",
@@ -14,8 +13,7 @@
     "coords": [[-0.1276, 51.5074], [-74.0060, 40.7128]],
     "color": ["#9caf88", "#b8c9a8"],
     "person": "Y",
-    "date": "October 2025",
-    "meetup": false
+    "date": "October 2025"
   },
   {
     "from": "London, UK",
@@ -23,8 +21,7 @@
     "coords": [[-0.1276, 51.5074], [73.8278, 15.2993]],
     "color": ["#9caf88", "#b8c9a8"],
     "person": "Y",
-    "date": "October 2025",
-    "meetup": false
+    "date": "October 2025"
   },
   {
     "from": "London, UK",
@@ -32,8 +29,7 @@
     "coords": [[-0.1276, 51.5074], [-104.9903, 39.7392]],
     "color": ["#9caf88", "#b8c9a8"],
     "person": "Y",
-    "date": "November 2025",
-    "meetup": false
+    "date": "November 2025"
   },
   {
     "from": "New York, NY, USA",
@@ -41,8 +37,7 @@
     "coords": [[-74.0060, 40.7128], [-119.4960, 49.8880]],
     "color": ["#d4a5a5", "#e6c0c0"],
     "person": "K",
-    "date": "June 2025",
-    "meetup": false
+    "date": "June 2025"
   },
   {
     "from": "Haliburton, ON, Canada",
@@ -50,8 +45,7 @@
     "coords": [[-78.5181, 45.0482], [-0.1276, 51.5074]],
     "color": ["#d4a5a5", "#e6c0c0"],
     "person": "K",
-    "date": "September 2025",
-    "meetup": false
+    "date": "September 2025"
   },
   {
     "from": "Haliburton, ON, Canada",
@@ -59,8 +53,7 @@
     "coords": [[-78.5181, 45.0482], [-74.0060, 40.7128]],
     "color": ["#d4a5a5", "#e6c0c0"],
     "person": "K",
-    "date": "October 2025",
-    "meetup": false
+    "date": "October 2025"
   },
   {
     "from": "Haliburton, ON, Canada",
@@ -68,8 +61,7 @@
     "coords": [[-78.5181, 45.0482], [73.8278, 15.2993]],
     "color": ["#d4a5a5", "#e6c0c0"],
     "person": "K",
-    "date": "October 2025",
-    "meetup": false
+    "date": "October 2025"
   },
   {
     "from": "Haliburton, ON, Canada",
@@ -77,7 +69,54 @@
     "coords": [[-78.5181, 45.0482], [-104.9903, 39.7392]],
     "color": ["#d4a5a5", "#e6c0c0"],
     "person": "K",
-    "date": "November 2025",
-    "meetup": false
+    "date": "November 2025"
+  },
+  {
+    "from": "London, UK",
+    "to": "St. Anton, Austria",
+    "coords": [[-0.1276, 51.5074], [10.2609, 47.1277]],
+    "color": ["#9caf88", "#b8c9a8"],
+    "person": "Y",
+    "date": "February 2026"
+  },
+  {
+    "from": "Haliburton, ON, Canada",
+    "to": "St. Anton, Austria",
+    "coords": [[-78.5181, 45.0482], [10.2609, 47.1277]],
+    "color": ["#d4a5a5", "#e6c0c0"],
+    "person": "K",
+    "date": "February 2026"
+  },
+  {
+    "from": "St. Anton, Austria",
+    "to": "London, UK",
+    "coords": [[10.2609, 47.1277], [-0.1276, 51.5074]],
+    "color": ["#8b5cf6", "#a855f7"],
+    "person": "Together",
+    "date": "February 2026"
+  },
+  {
+    "from": "London, UK",
+    "to": "Haliburton, ON, Canada",
+    "coords": [[-0.1276, 51.5074], [-78.5181, 45.0482]],
+    "color": ["#9caf88", "#b8c9a8"],
+    "person": "Y",
+    "date": "February 2026"
+  },
+  {
+    "from": "Fort Myers, FL, USA",
+    "to": "Haliburton, ON, Canada",
+    "coords": [[-81.8723, 26.6406], [-78.5181, 45.0482]],
+    "color": ["#d4a5a5", "#e6c0c0"],
+    "person": "K",
+    "date": "February 2026"
+  },
+  {
+    "from": "Haliburton, ON, Canada",
+    "to": "Tucson, AZ, USA",
+    "coords": [[-78.5181, 45.0482], [-110.9747, 32.2226]],
+    "color": ["#8b5cf6", "#a855f7"],
+    "person": "Together",
+    "date": "February 2026"
   }
 ]

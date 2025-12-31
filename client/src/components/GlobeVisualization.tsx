@@ -44,22 +44,51 @@ function calculateDistance(
   return Math.round(R * c);
 }
 
-// Mapping of destinations to continents
-const destinationToContinent: Record<string, string> = {
-  "Kelowna, BC, Canada": "North America",
-  "New York, NY, USA": "North America",
-  "Colorado, USA": "North America",
-  "Goa, India": "Asia",
-  "London, UK": "Europe",
+// Helper function to determine continent from coordinates
+const getContinent = (coords: [number, number]): string => {
+  const [lng, lat] = coords;
+  
+  // Simple continent detection based on coordinates
+  if (lng >= -180 && lng <= -30) {
+    if (lat >= 15) return "North America";
+    if (lat >= -60) return "South America";
+  } else if (lng >= -30 && lng <= 60) {
+    if (lat >= 35) return "Europe";
+    if (lat >= -35) return "Africa";
+  } else if (lng >= 60 && lng <= 180) {
+    if (lat >= 10) return "Asia";
+    if (lat >= -50) return "Asia"; // Southeast Asia/Oceania
+  }
+  
+  return "Unknown";
 };
 
-// Mapping of destinations to countries
-const destinationToCountry: Record<string, string> = {
-  "Kelowna, BC, Canada": "Canada",
-  "New York, NY, USA": "USA",
-  "Colorado, USA": "USA",
-  "Goa, India": "India",
-  "London, UK": "UK",
+// Helper function to determine country from location name
+const getCountry = (locationName: string): string => {
+  if (locationName.includes("Canada")) return "Canada";
+  if (locationName.includes("USA")) return "USA"; 
+  if (locationName.includes("UK")) return "UK";
+  if (locationName.includes("India")) return "India";
+  if (locationName.includes("Austria")) return "Austria";
+  
+  // Extract country from location string (assumes format "City, Country" or "City, State, Country")
+  const parts = locationName.split(", ");
+  return parts[parts.length - 1];
+};
+
+// Helper function to extract US state from location name
+const getUSState = (locationName: string): string | null => {
+  if (!locationName.includes("USA")) return null;
+  
+  const parts = locationName.split(", ");
+  if (parts.length >= 3) {
+    // Format: "City, State, USA"
+    return parts[1];
+  } else if (parts.length === 2) {
+    // Format: "State, USA"
+    return parts[0];
+  }
+  return null;
 };
 
 export default function GlobeVisualization({
@@ -77,29 +106,53 @@ export default function GlobeVisualization({
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const locationRoutesRef = useRef<Map<string, LocationRoute[]>>(new Map());
 
-  // Calculate statistics
+  // Calculate statistics automatically from routes data
   const stats = (() => {
     let totalDistance = 0;
     const continents = new Set<string>();
     const countries = new Set<string>();
+    const uniqueLocations = new Set<string>();
+    const usStates = new Set<string>();
 
     routes.forEach((route) => {
       // Calculate and add distance
       const distance = calculateDistance(route.coords[0], route.coords[1]);
       totalDistance += distance;
 
-      // Add continent and country from destination
-      const continent = destinationToContinent[route.to];
-      const country = destinationToCountry[route.to];
+      // Add both origin and destination locations
+      uniqueLocations.add(route.from);
+      uniqueLocations.add(route.to);
 
-      if (continent) continents.add(continent);
-      if (country) countries.add(country);
+      // Determine continent and country from destination coordinates and name
+      const continent = getContinent(route.coords[1]);
+      const country = getCountry(route.to);
+
+      continents.add(continent);
+      countries.add(country);
+      
+      // Also check origin
+      const originContinent = getContinent(route.coords[0]);
+      const originCountry = getCountry(route.from);
+      
+      continents.add(originContinent);
+      countries.add(originCountry);
+      
+      // Track US states
+      const destState = getUSState(route.to);
+      const originState = getUSState(route.from);
+      if (destState) usStates.add(destState);
+      if (originState) usStates.add(originState);
     });
+
+    // Remove "Unknown" from stats if present
+    continents.delete("Unknown");
 
     return {
       totalDistance,
       totalContinents: continents.size,
       totalCountries: countries.size,
+      totalCities: uniqueLocations.size,
+      totalUSStates: usStates.size,
     };
   })();
 
@@ -772,6 +825,15 @@ export default function GlobeVisualization({
           </div>
           <div data-testid="stat-countries">
             Countries: {stats.totalCountries}
+          </div>
+          <div data-testid="stat-cities">
+            Cities: {stats.totalCities}
+          </div>
+          <div data-testid="stat-us-states">
+            US States: {stats.totalUSStates}
+          </div>
+          <div data-testid="stat-routes">
+            Routes: {routes.length}
           </div>
         </div>
       </div>
