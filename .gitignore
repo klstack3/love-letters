@@ -21,7 +21,7 @@ server/public
 # Love Letters specific
 vite.config.ts.*
 .local/
-.replit
+
 
 # IDE
 .vscode/

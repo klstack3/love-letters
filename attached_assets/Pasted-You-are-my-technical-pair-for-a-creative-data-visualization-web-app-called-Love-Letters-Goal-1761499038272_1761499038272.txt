@@ -90,7 +90,7 @@ Deliverables
 
 A complete, runnable repo structure with all dependencies and starter code.
 
-Ready to open in VS Code or Replit and preview in browser via npm run dev.
+Ready to open in VS Code and preview in browser via npm run dev.
 
 Instructions
 Generate the full scaffold and base components with proper imports and placeholder assets, following the structure above.
