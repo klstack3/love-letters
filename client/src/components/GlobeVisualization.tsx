@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import countryLabels from "@/data/country-labels.json";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface RouteData {
   from: string;
@@ -103,8 +104,71 @@ export default function GlobeVisualization({
     x: number;
     y: number;
   } | null>(null);
+  const [statsCollapsed, setStatsCollapsed] = useState(false);
+  const [safeAreaBottom, setSafeAreaBottom] = useState(0);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const locationRoutesRef = useRef<Map<string, LocationRoute[]>>(new Map());
+  const isMobile = useIsMobile();
+
+  // Detect mobile browser toolbar height and safe areas
+  useEffect(() => {
+    if (!isMobile) {
+      setSafeAreaBottom(0);
+      return;
+    }
+
+    const detectSafeArea = () => {
+      // Get CSS safe area insets (for devices with notches/gesture areas)
+      const computedStyle = getComputedStyle(document.documentElement);
+      const safeAreaBottomValue = computedStyle.getPropertyValue('env(safe-area-inset-bottom)');
+      
+      let bottomOffset = 0;
+      
+      // Parse safe area inset if available
+      if (safeAreaBottomValue) {
+        const pixels = parseInt(safeAreaBottomValue.replace('px', ''));
+        bottomOffset = Math.max(bottomOffset, pixels);
+      }
+      
+      // Additional detection for browser toolbars
+      // On mobile browsers, viewport height changes when toolbars show/hide
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const windowHeight = window.innerHeight;
+      
+      // If visual viewport is smaller than window height, there's likely a toolbar
+      const toolbarHeight = windowHeight - viewportHeight;
+      if (toolbarHeight > 0) {
+        bottomOffset = Math.max(bottomOffset, toolbarHeight + 20); // Add padding
+      } else {
+        // Fallback: assume standard mobile browser toolbar height
+        bottomOffset = Math.max(bottomOffset, 80);
+      }
+      
+      setSafeAreaBottom(bottomOffset);
+    };
+
+    detectSafeArea();
+    
+    // Listen for viewport changes (toolbar show/hide)
+    const handleResize = () => detectSafeArea();
+    const handleOrientationChange = () => setTimeout(detectSafeArea, 100);
+    
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    
+    // Listen for visual viewport changes if supported
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, [isMobile]);
 
   // Calculate statistics automatically from routes data
   const stats = (() => {
@@ -119,29 +183,19 @@ export default function GlobeVisualization({
       const distance = calculateDistance(route.coords[0], route.coords[1]);
       totalDistance += distance;
 
-      // Add both origin and destination locations
-      uniqueLocations.add(route.from);
+      // Add only destination locations for city count
       uniqueLocations.add(route.to);
 
-      // Determine continent and country from destination coordinates and name
+      // Determine continent and country from destination coordinates and name only
       const continent = getContinent(route.coords[1]);
       const country = getCountry(route.to);
 
       continents.add(continent);
       countries.add(country);
       
-      // Also check origin
-      const originContinent = getContinent(route.coords[0]);
-      const originCountry = getCountry(route.from);
-      
-      continents.add(originContinent);
-      countries.add(originCountry);
-      
-      // Track US states
+      // Track US states for destinations only
       const destState = getUSState(route.to);
-      const originState = getUSState(route.from);
       if (destState) usStates.add(destState);
-      if (originState) usStates.add(originState);
     });
 
     // Remove "Unknown" from stats if present
@@ -811,29 +865,53 @@ export default function GlobeVisualization({
         </div>
       )}
 
-      {/* Statistics panel - bottom left */}
+      {/* Statistics panel - intelligently positioned for mobile */}
       <div
-        className="absolute bottom-6 left-6 z-50 pointer-events-none"
+        className={`absolute z-50 transition-all duration-300 ${
+          isMobile 
+            ? `left-4 ${safeAreaBottom > 0 ? '' : 'bottom-6'}` 
+            : 'bottom-6 left-6'
+        }`}
+        style={{
+          bottom: isMobile && safeAreaBottom > 0 ? `${safeAreaBottom + 24}px` : undefined,
+        }}
         data-testid="stats-panel"
       >
-        <div className="text-white font-mono text-sm space-y-1">
-          <div data-testid="stat-distance">
-            Distance: {stats.totalDistance.toLocaleString()} km
-          </div>
-          <div data-testid="stat-continents">
-            Continents: {stats.totalContinents}
-          </div>
-          <div data-testid="stat-countries">
-            Countries: {stats.totalCountries}
-          </div>
-          <div data-testid="stat-cities">
-            Cities: {stats.totalCities}
-          </div>
-          <div data-testid="stat-us-states">
-            US States: {stats.totalUSStates}
-          </div>
-          <div data-testid="stat-routes">
-            Routes: {routes.length}
+        <div className="pointer-events-auto">
+          {/* Toggle button */}
+          <button
+            onClick={() => setStatsCollapsed(!statsCollapsed)}
+            className="mb-2 px-3 py-2 bg-black/80 hover:bg-black/90 text-white text-xs font-mono rounded-md border border-white/20 transition-colors duration-200 flex items-center gap-2"
+            aria-label={statsCollapsed ? 'Show statistics' : 'Hide statistics'}
+          >
+            <span>💜</span>
+            {!statsCollapsed && <span>⬇️</span>}
+          </button>
+          
+          {/* Stats content */}
+          <div className={`overflow-hidden transition-all duration-300 ${
+            statsCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
+          }`}>
+            <div className="text-white font-mono text-sm space-y-1 bg-black/80 backdrop-blur-sm p-4 rounded-md border border-white/20">
+              <div data-testid="stat-distance" className="flex justify-between">
+                <span>Distance:</span> <span className="text-blue-300">{stats.totalDistance.toLocaleString()} km</span>
+              </div>
+              <div data-testid="stat-continents" className="flex justify-between">
+                <span>Continents:</span> <span className="text-green-300">{stats.totalContinents}</span>
+              </div>
+              <div data-testid="stat-countries" className="flex justify-between">
+                <span>Countries:</span> <span className="text-yellow-300">{stats.totalCountries}</span>
+              </div>
+              <div data-testid="stat-cities" className="flex justify-between">
+                <span>Cities:</span> <span className="text-purple-300">{stats.totalCities}</span>
+              </div>
+              <div data-testid="stat-us-states" className="flex justify-between">
+                <span>US States:</span> <span className="text-red-300">{stats.totalUSStates}</span>
+              </div>
+              <div data-testid="stat-routes" className="flex justify-between">
+                <span>Routes:</span> <span className="text-orange-300">{routes.length}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
