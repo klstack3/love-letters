@@ -1,14 +1,10 @@
-# Experiments Repository
-
-Creative projects and modern web development experiments, currently featuring **Love Letters** - a beautiful 3D globe visualization.
-
-## 🌟 Currently Experimenting With: Love Letters 💌
+# Love Letters 💌
 
 A minimalist, visually stunning 3D globe visualization showing flight routes between two people as digital art. Built with React, TypeScript, and Mapbox GL.
 
 ![Love Letters Demo](https://via.placeholder.com/800x400/000000/FFFFFF?text=Love+Letters+Globe+Visualization)
 
-### ✨ Features
+## ✨ Features
 
 - **3D Interactive Globe**: Navigate with zoom, pan, and rotate
 - **Beautiful Flight Routes**: Luminous curved arcs with gradient colors
@@ -18,7 +14,7 @@ A minimalist, visually stunning 3D globe visualization showing flight routes bet
 - **Date Tooltips**: Hover over routes to see travel dates
 - **Responsive Design**: Full-screen immersive experience
 
-### 🚀 Tech Stack
+## 🚀 Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Visualization**: Mapbox GL JS with globe projection
@@ -26,43 +22,38 @@ A minimalist, visually stunning 3D globe visualization showing flight routes bet
 - **Backend**: Express.js + Node.js
 - **Deployment**: Vercel-ready configuration
 
-### 🛠️ Getting Started
+## 🛠️ Getting Started
 
-#### Prerequisites
+### Prerequisites
 
-- Node.js 18+
+- Node.js 18+ 
 - npm or yarn
 - Mapbox account (free tier available)
 
-#### Local Development
+### Local Development
 
 1. **Clone the repository**
-
    ```bash
-   git clone https://github.com/klstack3/experiments.git
-   cd experiments
+   git clone https://github.com/klstack3/love-letters.git
+   cd love-letters
    ```
 
 2. **Install dependencies**
-
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
-
    ```bash
    cp .env.production.example .env
    ```
-
+   
    Get your Mapbox access token from [Mapbox Account Dashboard](https://account.mapbox.com/access-tokens/) and update `.env`:
-
    ```env
    MAPBOX_ACCESS_TOKEN=pk.your_actual_mapbox_token_here
    ```
 
 4. **Start development server**
-
    ```bash
    npm run dev
    ```
@@ -70,12 +61,11 @@ A minimalist, visually stunning 3D globe visualization showing flight routes bet
 5. **Open your browser**
    Navigate to `http://localhost:3001`
 
-### 🚀 Deployment
+## 🚀 Deployment
 
-#### Deploy to Vercel
+### Deploy to Vercel
 
 1. **Deploy with Vercel**
-
    - Visit [vercel.com](https://vercel.com) and import your GitHub repository
    - Set environment variable: `MAPBOX_ACCESS_TOKEN=your_token_here`
    - Deploy automatically
@@ -85,74 +75,63 @@ A minimalist, visually stunning 3D globe visualization showing flight routes bet
    npx vercel --prod
    ```
 
-### 🎨 Design Philosophy
+## 📊 Data Structure
+
+Routes are defined in `client/src/data/routes.json`:
+
+```json
+{
+  "from": "London, UK",
+  "to": "New York, NY, USA", 
+  "coords": [[-0.1276, 51.5074], [-74.0060, 40.7128]],
+  "color": ["#9caf88", "#b8c9a8"],
+  "person": "Y",
+  "date": "October 2025",
+  "meetup": false
+}
+```
+
+## 🎨 Design Philosophy
 
 Love Letters prioritizes aesthetic beauty over explicit communication:
 
 - **Minimalist**: Clean, uncluttered interface
-- **Artistic**: Focus on visual poetry rather than data clarity
+- **Artistic**: Focus on visual poetry rather than data clarity  
 - **Personal**: Intimate visualization of shared journeys
 - **Interactive**: Engaging 3D exploration experience
 
----
+## 📱 Usage
 
-## 🚀 Previous Projects
+- **Navigate**: Click and drag to rotate the globe
+- **Zoom**: Scroll to zoom in/out
+- **Explore**: Hover over routes to see travel dates
+- **Discover**: Find golden envelope icons marking special meetups
 
-### Professional Headshot AI Generator
+## 🛠️ Customization
 
-A React-based web application that transforms user photos into professional headshots using Google's Imagen 3 AI (Nano Banana). Users can choose from three professional styles and compare results side-by-side.
+### Adding New Routes
 
-**Status**: Milestone 1 ✅ COMPLETE - Full React UI with TailwindCSS 3
+Edit `client/src/data/routes.json` to add your own travel data:
 
-#### 🎯 Features
+1. Get coordinates for your cities
+2. Choose gradient colors
+3. Set person identifier and travel date
+4. Mark special meetups with `"meetup": true`
 
-- **Three Professional Styles**: Corporate Classic, Creative Professional, Executive Portrait
-- **Drag-and-Drop Upload**: Easy image upload with validation
-- **Side-by-Side Comparison**: Compare original vs generated headshots
-- **Responsive Design**: Works perfectly on desktop and mobile
-- **Step-by-Step Flow**: Intuitive 4-step user experience
+### Styling
 
-#### 🛠️ Tech Stack
+- Colors defined in `design_guidelines.md`
+- Tailwind classes in component files
+- Globe styling in `GlobeVisualization.tsx`
 
-- **Frontend**: React 19, Vite 7, TailwindCSS 3
-- **Backend**: Express.js (planned for Milestone 2)
-- **AI**: Google Imagen 3 API (Nano Banana)
-- **Icons**: Lucide React
-- **File Handling**: React Dropzone
+## 📄 License
 
-#### 🏃‍♂️ Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/klstack3/experiments.git
-cd experiments
-
-# Install frontend dependencies
-cd frontend
-npm install
-
-# Start development server
-npm run dev
-```
-
-Visit `http://localhost:5173` to see the app in action!
-
-#### 🔗 Credits & Inspiration
-
-This project is inspired by the excellent tutorial from Creator Economy:
-
-- **Original Tutorial**: [Build an AI Headshot App with Google Nano Banana](https://creatoreconomy.so/p/full-tutorial-build-an-ai-headshot-app-with-google-nano-banana-in-15-minutes)
-
----
-
-## 📝 License
-
-MIT License - See individual project directories for specific details.
+MIT License - feel free to use this for your own journey visualization!
 
 ## 🤝 Contributing
 
-This is a public coding portfolio showcasing various experiments and learning projects. Feel free to explore the code and suggest improvements!
+This is a personal art project, but suggestions and improvements are welcome via issues and pull requests.
 
 ---
 
-_"Every route tells a story, every journey connects hearts across the globe."_
+*"Every route tells a story, every journey connects hearts across the globe."*
