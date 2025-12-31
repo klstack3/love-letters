@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Love Letters 💌
 
 A minimalist, visually stunning 3D globe visualization showing flight routes between two people as digital art. Built with React, TypeScript, and Mapbox GL.
@@ -135,3 +136,7 @@ This is a personal art project, but suggestions and improvements are welcome via
 ---
 
 *"Every route tells a story, every journey connects hearts across the globe."*
+=======
+# love-letters
+Flight patterns as digital art. 
+>>>>>>> 7018ba4be27e54d0aaf3cdd91fba0b3009f42c7c
