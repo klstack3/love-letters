@@ -1,6 +1,7 @@
 {
-  "name": "rest-express",
+  "name": "love-letters-globe-viz",
   "version": "1.0.0",
+  "description": "A minimalist 3D globe visualization showing flight routes between two people as digital art",
   "type": "module",
   "license": "MIT",
   "scripts": {
