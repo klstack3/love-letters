@@ -48,7 +48,7 @@ function calculateDistance(
 // Helper function to determine continent from coordinates
 const getContinent = (coords: [number, number]): string => {
   const [lng, lat] = coords;
-  
+
   // Simple continent detection based on coordinates
   if (lng >= -180 && lng <= -30) {
     if (lat >= 15) return "North America";
@@ -60,18 +60,18 @@ const getContinent = (coords: [number, number]): string => {
     if (lat >= 10) return "Asia";
     if (lat >= -50) return "Asia"; // Southeast Asia/Oceania
   }
-  
+
   return "Unknown";
 };
 
 // Helper function to determine country from location name
 const getCountry = (locationName: string): string => {
   if (locationName.includes("Canada")) return "Canada";
-  if (locationName.includes("USA")) return "USA"; 
+  if (locationName.includes("USA")) return "USA";
   if (locationName.includes("UK")) return "UK";
   if (locationName.includes("India")) return "India";
   if (locationName.includes("Austria")) return "Austria";
-  
+
   // Extract country from location string (assumes format "City, Country" or "City, State, Country")
   const parts = locationName.split(", ");
   return parts[parts.length - 1];
@@ -80,7 +80,7 @@ const getCountry = (locationName: string): string => {
 // Helper function to extract US state from location name
 const getUSState = (locationName: string): string | null => {
   if (!locationName.includes("USA")) return null;
-  
+
   const parts = locationName.split(", ");
   if (parts.length >= 3) {
     // Format: "City, State, USA"
@@ -120,21 +120,24 @@ export default function GlobeVisualization({
     const detectSafeArea = () => {
       // Get CSS safe area insets (for devices with notches/gesture areas)
       const computedStyle = getComputedStyle(document.documentElement);
-      const safeAreaBottomValue = computedStyle.getPropertyValue('env(safe-area-inset-bottom)');
-      
+      const safeAreaBottomValue = computedStyle.getPropertyValue(
+        "env(safe-area-inset-bottom)"
+      );
+
       let bottomOffset = 0;
-      
+
       // Parse safe area inset if available
       if (safeAreaBottomValue) {
-        const pixels = parseInt(safeAreaBottomValue.replace('px', ''));
+        const pixels = parseInt(safeAreaBottomValue.replace("px", ""));
         bottomOffset = Math.max(bottomOffset, pixels);
       }
-      
+
       // Additional detection for browser toolbars
       // On mobile browsers, viewport height changes when toolbars show/hide
-      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const viewportHeight =
+        window.visualViewport?.height || window.innerHeight;
       const windowHeight = window.innerHeight;
-      
+
       // If visual viewport is smaller than window height, there's likely a toolbar
       const toolbarHeight = windowHeight - viewportHeight;
       if (toolbarHeight > 0) {
@@ -143,29 +146,29 @@ export default function GlobeVisualization({
         // Fallback: assume standard mobile browser toolbar height
         bottomOffset = Math.max(bottomOffset, 80);
       }
-      
+
       setSafeAreaBottom(bottomOffset);
     };
 
     detectSafeArea();
-    
+
     // Listen for viewport changes (toolbar show/hide)
     const handleResize = () => detectSafeArea();
     const handleOrientationChange = () => setTimeout(detectSafeArea, 100);
-    
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleOrientationChange);
-    
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleOrientationChange);
+
     // Listen for visual viewport changes if supported
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize);
+      window.visualViewport.addEventListener("resize", handleResize);
     }
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleOrientationChange);
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener("resize", handleResize);
       }
     };
   }, [isMobile]);
@@ -192,7 +195,7 @@ export default function GlobeVisualization({
 
       continents.add(continent);
       countries.add(country);
-      
+
       // Track US states for destinations only
       const destState = getUSState(route.to);
       if (destState) usStates.add(destState);
@@ -868,12 +871,15 @@ export default function GlobeVisualization({
       {/* Statistics panel - intelligently positioned for mobile */}
       <div
         className={`absolute z-50 transition-all duration-300 ${
-          isMobile 
-            ? `left-4 ${safeAreaBottom > 0 ? '' : 'bottom-6'}` 
-            : 'bottom-6 left-6'
+          isMobile
+            ? `left-4 ${safeAreaBottom > 0 ? "" : "bottom-6"}`
+            : "bottom-6 left-6"
         }`}
         style={{
-          bottom: isMobile && safeAreaBottom > 0 ? `${safeAreaBottom + 24}px` : undefined,
+          bottom:
+            isMobile && safeAreaBottom > 0
+              ? `${safeAreaBottom + 24}px`
+              : undefined,
         }}
         data-testid="stats-panel"
       >
@@ -882,34 +888,53 @@ export default function GlobeVisualization({
           <button
             onClick={() => setStatsCollapsed(!statsCollapsed)}
             className="mb-2 px-3 py-2 bg-black/80 hover:bg-black/90 text-white text-xs font-mono rounded-md border border-white/20 transition-colors duration-200 flex items-center gap-2"
-            aria-label={statsCollapsed ? 'Show statistics' : 'Hide statistics'}
+            aria-label={statsCollapsed ? "Show statistics" : "Hide statistics"}
           >
             <span>💜</span>
             {!statsCollapsed && <span>⬇️</span>}
           </button>
-          
+
           {/* Stats content */}
-          <div className={`overflow-hidden transition-all duration-300 ${
-            statsCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
-          }`}>
+          <div
+            className={`overflow-hidden transition-all duration-300 ${
+              statsCollapsed ? "max-h-0 opacity-0" : "max-h-96 opacity-100"
+            }`}
+          >
             <div className="text-white font-mono text-sm space-y-1 bg-black/80 backdrop-blur-sm p-4 rounded-md border border-white/20">
               <div data-testid="stat-distance" className="flex justify-between">
-                <span>Distance:</span> <span className="text-blue-300">{stats.totalDistance.toLocaleString()} km</span>
+                <span>Distance:</span>{" "}
+                <span className="text-blue-300">
+                  {stats.totalDistance.toLocaleString()} km
+                </span>
               </div>
-              <div data-testid="stat-continents" className="flex justify-between">
-                <span>Continents:</span> <span className="text-green-300">{stats.totalContinents}</span>
+              <div
+                data-testid="stat-continents"
+                className="flex justify-between"
+              >
+                <span>Continents:</span>{" "}
+                <span className="text-green-300">{stats.totalContinents}</span>
               </div>
-              <div data-testid="stat-countries" className="flex justify-between">
-                <span>Countries:</span> <span className="text-yellow-300">{stats.totalCountries}</span>
+              <div
+                data-testid="stat-countries"
+                className="flex justify-between"
+              >
+                <span>Countries:</span>{" "}
+                <span className="text-yellow-300">{stats.totalCountries}</span>
               </div>
               <div data-testid="stat-cities" className="flex justify-between">
-                <span>Cities:</span> <span className="text-purple-300">{stats.totalCities}</span>
+                <span>Cities:</span>{" "}
+                <span className="text-purple-300">{stats.totalCities}</span>
               </div>
-              <div data-testid="stat-us-states" className="flex justify-between">
-                <span>US States:</span> <span className="text-red-300">{stats.totalUSStates}</span>
+              <div
+                data-testid="stat-us-states"
+                className="flex justify-between"
+              >
+                <span>US States:</span>{" "}
+                <span className="text-red-300">{stats.totalUSStates}</span>
               </div>
               <div data-testid="stat-routes" className="flex justify-between">
-                <span>Routes:</span> <span className="text-orange-300">{routes.length}</span>
+                <span>Routes:</span>{" "}
+                <span className="text-orange-300">{routes.length}</span>
               </div>
             </div>
           </div>
