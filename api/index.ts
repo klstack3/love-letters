@@ -1,42 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
-  console.log('Request URL:', req.url);
-  console.log('Request method:', req.method);
-  
-  // Handle CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // More robust URL checking for the config endpoint
-  const urlPath = req.url || '';
-  const isConfigRequest = urlPath.includes('/api/config') || urlPath.includes('/config') || urlPath.endsWith('/config');
-  
-  if (isConfigRequest) {
-    console.log('Config requested, MAPBOX_ACCESS_TOKEN:', process.env.MAPBOX_ACCESS_TOKEN ? 'Set' : 'Not set');
-    
-    const response = {
-      mapboxToken: process.env.MAPBOX_ACCESS_TOKEN || '',
-      debug: {
-        hasToken: !!process.env.MAPBOX_ACCESS_TOKEN,
-        env: process.env.NODE_ENV || 'development',
-        url: req.url,
-        timestamp: new Date().toISOString()
-      }
-    };
-    
-    console.log('Sending config response:', response);
-    
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json(response);
-  }
-
-  // For all other routes, serve a simple HTML response
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -63,7 +27,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
                 const response = await fetch('/api/config');
                 
                 console.log('Response status:', response.status);
-                console.log('Response headers:', [...response.headers.entries()]);
+                console.log('Response type:', response.headers.get('content-type'));
                 
                 if (!response.ok) {
                     throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
@@ -98,7 +62,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
                 
             } catch (error) {
                 console.error('Error:', error);
-                debugEl.innerHTML = '<strong>Error:</strong> ' + error.message + '<br><br>Check the browser console for details.';
+                debugEl.innerHTML = '<strong>Error:</strong> ' + error.message + '<br><br>Response was not valid JSON. Check Network tab in DevTools.';
             }
         }
         
