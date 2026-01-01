@@ -3,7 +3,7 @@
 
 A minimalist 3D globe visualization showing flight routes between two people as digital art. Built with React, TypeScript, and Mapbox GL.
 
-![Love Letters Demo]([https://via.placeholder.com/800x400/000000/FFFFFF?text=Love+Letters+Globe+Visualization](https://love-letters-theta.vercel.app/))
+![Love Letters Demo]([[https://via.placeholder.com/800x400/000000/FFFFFF?text=Love+Letters+Globe+Visualization](https://love-letters-theta.vercel.app/)](https://love-letters-theta.vercel.app/))
 
 ## ✨ Features
 
@@ -97,8 +97,7 @@ Routes are defined in `client/src/data/routes.json`:
 Love Letters prioritizes aesthetic beauty over explicit communication:
 
 - **Minimalist**: Clean, uncluttered interface
-- **Artistic**: Focus on visual poetry rather than data clarity  
-- **Personal**: Intimate visualization of shared journeys
+- **Artistic**: Focus on visual impact rather than concise data clarity  
 - **Interactive**: Engaging 3D exploration experience
 
 ## 📱 Usage
