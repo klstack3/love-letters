@@ -3,6 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import countryLabels from "@/data/country-labels.json";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getMapboxToken } from "@/lib/mapbox";
 
 export interface RouteData {
   from: string;
@@ -211,18 +212,20 @@ export default function GlobeVisualization({
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
+    let cancelled = false;
 
     const initMap = async () => {
       try {
-        const response = await fetch("/api/config");
-        const config = await response.json();
+        const mapboxToken = await getMapboxToken();
+        // Routes can change while the token is loading; only the latest effect may create the map
+        if (cancelled) return;
 
-        if (!config.mapboxToken) {
+        if (!mapboxToken) {
           console.error("MAPBOX_ACCESS_TOKEN is not set");
           return;
         }
 
-        mapboxgl.accessToken = config.mapboxToken;
+        mapboxgl.accessToken = mapboxToken;
 
         map.current = new mapboxgl.Map({
           container: mapContainer.current!,
@@ -855,6 +858,9 @@ export default function GlobeVisualization({
     initMap();
 
     return () => {
+      cancelled = true;
+      setMapLoaded(false);
+      setHoveredLocation(null);
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
       map.current?.remove();

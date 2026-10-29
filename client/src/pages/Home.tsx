@@ -1,9 +1,10 @@
-import GlobeVisualization, { type RouteData } from '@/components/GlobeVisualization';
-import routesData from '@/data/routes.json';
+import GlobeVisualization from '@/components/GlobeVisualization';
+import { useGlobeRoutes } from '@/hooks/use-globe-routes';
+import { bundledGlobeData } from '@/lib/globeData';
 
 export default function Home() {
-  const routes = routesData as RouteData[];
-  
+  const routes = useGlobeRoutes(bundledGlobeData);
+
   return (
     <div className="w-full h-screen bg-black" data-testid="home-page">
       <GlobeVisualization routes={routes} />

@@ -1,7 +1,7 @@
-import GlobeVisualization, { type RouteData } from '../GlobeVisualization';
-import routesData from '../../data/routes.json';
+import GlobeVisualization from '../GlobeVisualization';
+import { bundledGlobeData, toRouteData } from '@/lib/globeData';
 
 export default function GlobeVisualizationExample() {
-  const routes = routesData as RouteData[];
+  const routes = toRouteData(bundledGlobeData);
   return <GlobeVisualization routes={routes} />;
 }
