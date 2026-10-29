@@ -52,6 +52,7 @@ Love Letters Demo: https://love-letters-theta.vercel.app/
    Get your Mapbox access token from [Mapbox Account Dashboard](https://account.mapbox.com/access-tokens/) and update `.env`:
    ```env
    MAPBOX_ACCESS_TOKEN=pk.your_actual_mapbox_token_here
+   ADMIN_PASSWORD=pick-something-long
    ```
 
 4. **Start development server**
@@ -60,7 +61,7 @@ Love Letters Demo: https://love-letters-theta.vercel.app/
    ```
 
 5. **Open your browser**
-   Navigate to `http://localhost:3001`
+   Navigate to `http://localhost:5000` (admin page at `/admin`). Locally, publishing from the admin page writes `client/src/data/routes.json` directly unless `GITHUB_TOKEN` is set.
 
 ## 🚀 Deployment
 
@@ -68,7 +69,7 @@ Love Letters Demo: https://love-letters-theta.vercel.app/
 
 1. **Deploy with Vercel**
    - Visit [vercel.com](https://vercel.com) and import your GitHub repository
-   - Set environment variable: `MAPBOX_ACCESS_TOKEN=your_token_here`
+   - Set environment variables (see below)
    - Deploy automatically
 
 2. **Or deploy via Vercel CLI**
@@ -76,21 +77,44 @@ Love Letters Demo: https://love-letters-theta.vercel.app/
    npx vercel --prod
    ```
 
-## 📊 Data Structure
+### Environment variables
 
-Routes are defined in `client/src/data/routes.json`:
+| Variable | Needed for | Notes |
+|----------|-----------|-------|
+| `MAPBOX_ACCESS_TOKEN` | The globe | Public `pk.` token |
+| `ADMIN_PASSWORD` | `/admin` | Anyone with this can edit trips |
+| `GITHUB_TOKEN` | Publishing from `/admin` | Fine-grained token with **Contents: Read and write** on this repo only |
+| `GITHUB_REPO` | Optional | Defaults to `klstack3/love-letters` |
+| `GITHUB_BRANCH` | Optional | Defaults to `main` |
+
+## ✏️ Updating trips
+
+### From the admin page (easiest)
+
+Go to `/admin` on the live site, enter the admin password, then add, edit, or delete trips. Type any city — new places are looked up on the map automatically. Use **Preview** to see the globe, then **Publish**. Publishing commits `routes.json` to GitHub, and Vercel redeploys the site in about a minute.
+
+### By editing the file
+
+Trips live in `client/src/data/routes.json`, one per line:
 
 ```json
 {
-  "from": "London, UK",
-  "to": "New York, NY, USA", 
-  "coords": [[-0.1276, 51.5074], [-74.0060, 40.7128]],
-  "color": ["#9caf88", "#b8c9a8"],
-  "person": "Y",
-  "date": "October 2025",
-  "meetup": false
+  "routes": [
+    { "from": "London, UK", "to": "New York, NY, USA", "date": "October 2025", "person": "Y" }
+  ],
+  "people": {
+    "Y": { "colors": ["#9caf88", "#b8c9a8"] }
+  },
+  "places": {
+    "London, UK": [-0.1276, 51.5074],
+    "New York, NY, USA": [-74.006, 40.7128]
+  }
 }
 ```
+
+- `routes`: just names, a month, and who travelled. Name places as "City, Country" or "City, State, USA" (the stats panel reads countries and US states from the name).
+- `people`: the line colors for each person.
+- `places`: coordinates for each place name. If a route uses a place that isn't listed, the site looks it up on the map automatically — add it here (or publish from `/admin`) to pin exact coordinates.
 
 ## 🎨 Design Philosophy
 
@@ -108,15 +132,6 @@ Love Letters prioritizes aesthetic beauty over explicit communication:
 - **Discover**: Find golden envelope icons marking special meetups
 
 ## 🛠️ Customization
-
-### Adding New Routes
-
-Edit `client/src/data/routes.json` to add your own travel data:
-
-1. Get coordinates for your cities
-2. Choose gradient colors
-3. Set person identifier and travel date
-4. Mark special meetups with `"meetup": true`
 
 ### Styling
 
