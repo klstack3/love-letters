@@ -311,11 +311,11 @@ export default function Admin() {
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ background: draft.people[route.person]?.colors[0] ?? "#888" }}
                   />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1" title={`${route.from} → ${route.to}`}>
                     <div className="flex items-center gap-1.5 text-sm">
-                      <span className="truncate">{route.from}</span>
+                      <span className="truncate">{shortPlace(route.from)}</span>
                       <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      <span className="truncate">{route.to}</span>
+                      <span className="truncate">{shortPlace(route.to)}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">{route.person}</div>
                   </div>
@@ -398,6 +398,8 @@ function PreviewGlobe({ data }: { data: GlobeData }) {
   const routes = useGlobeRoutes(data);
   return <GlobeVisualization routes={routes} />;
 }
+
+const shortPlace = (name: string) => name.split(",")[0];
 
 function groupByDate(routes: SimpleRoute[]) {
   const groups = new Map<string, { route: SimpleRoute; index: number }[]>();
