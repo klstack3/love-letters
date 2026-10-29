@@ -97,81 +97,77 @@ export default function GlobeVisualization({
 }: GlobeVisualizationProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [hoveredLocation, setHoveredLocation] = useState<{
     name: string;
     routes: LocationRoute[];
-    x: number;
-    y: number;
+    lngLat: [number, number];
+  } | null>(null);
+  const hoveredLocationRef = useRef<{
+    name: string;
+    routes: LocationRoute[];
+    lngLat: [number, number];
   } | null>(null);
   const [statsCollapsed, setStatsCollapsed] = useState(false);
-  const [safeAreaBottom, setSafeAreaBottom] = useState(0);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const locationRoutesRef = useRef<Map<string, LocationRoute[]>>(new Map());
+  const suppressMapClickRef = useRef(false);
   const isMobile = useIsMobile();
 
-  // Detect mobile browser toolbar height and safe areas
+  // Keep hover ref in sync so map move handlers can reproject without stale state
   useEffect(() => {
-    if (!isMobile) {
-      setSafeAreaBottom(0);
-      return;
-    }
+    hoveredLocationRef.current = hoveredLocation;
+  }, [hoveredLocation]);
 
-    const detectSafeArea = () => {
-      // Get CSS safe area insets (for devices with notches/gesture areas)
-      const computedStyle = getComputedStyle(document.documentElement);
-      const safeAreaBottomValue = computedStyle.getPropertyValue(
-        "env(safe-area-inset-bottom)"
-      );
+  // Project tooltip to the marker's current screen position on every frame of map motion
+  const syncTooltipPosition = () => {
+    const hovered = hoveredLocationRef.current;
+    const tooltipEl = tooltipRef.current;
+    if (!hovered || !tooltipEl || !map.current) return;
 
-      let bottomOffset = 0;
+    const point = map.current.project(hovered.lngLat);
+    const canvas = map.current.getCanvas();
+    const visible =
+      point.x >= 0 &&
+      point.y >= 0 &&
+      point.x <= canvas.clientWidth &&
+      point.y <= canvas.clientHeight;
 
-      // Parse safe area inset if available
-      if (safeAreaBottomValue) {
-        const pixels = parseInt(safeAreaBottomValue.replace("px", ""));
-        bottomOffset = Math.max(bottomOffset, pixels);
-      }
+    tooltipEl.style.visibility = visible ? "visible" : "hidden";
+    tooltipEl.style.left = `${point.x}px`;
+    tooltipEl.style.top = `${point.y - 16}px`;
+  };
 
-      // Additional detection for browser toolbars
-      // On mobile browsers, viewport height changes when toolbars show/hide
-      const viewportHeight =
-        window.visualViewport?.height || window.innerHeight;
-      const windowHeight = window.innerHeight;
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
 
-      // If visual viewport is smaller than window height, there's likely a toolbar
-      const toolbarHeight = windowHeight - viewportHeight;
-      if (toolbarHeight > 0) {
-        bottomOffset = Math.max(bottomOffset, toolbarHeight + 20); // Add padding
-      } else {
-        // Fallback: assume standard mobile browser toolbar height
-        bottomOffset = Math.max(bottomOffset, 80);
-      }
-
-      setSafeAreaBottom(bottomOffset);
+    const mapInstance = map.current;
+    const onMove = () => syncTooltipPosition();
+    const onViewportChange = () => {
+      mapInstance.resize();
+      syncTooltipPosition();
     };
 
-    detectSafeArea();
-
-    // Listen for viewport changes (toolbar show/hide)
-    const handleResize = () => detectSafeArea();
-    const handleOrientationChange = () => setTimeout(detectSafeArea, 100);
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleOrientationChange);
-
-    // Listen for visual viewport changes if supported
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", handleResize);
-    }
+    mapInstance.on("move", onMove);
+    mapInstance.on("zoom", onMove);
+    mapInstance.on("pitch", onMove);
+    mapInstance.on("rotate", onMove);
+    window.addEventListener("resize", onViewportChange);
+    window.visualViewport?.addEventListener("resize", onViewportChange);
+    window.visualViewport?.addEventListener("scroll", onViewportChange);
+    syncTooltipPosition();
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleOrientationChange);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", handleResize);
-      }
+      mapInstance.off("move", onMove);
+      mapInstance.off("zoom", onMove);
+      mapInstance.off("pitch", onMove);
+      mapInstance.off("rotate", onMove);
+      window.removeEventListener("resize", onViewportChange);
+      window.visualViewport?.removeEventListener("resize", onViewportChange);
+      window.visualViewport?.removeEventListener("scroll", onViewportChange);
     };
-  }, [isMobile]);
+  }, [mapLoaded, hoveredLocation]);
 
   // Calculate statistics automatically from routes data
   const stats = (() => {
@@ -627,8 +623,37 @@ export default function GlobeVisualization({
             });
           });
 
-          // Add location markers
+          // Add location markers.
+          // Important: never put CSS transitions on the marker root's `transform` —
+          // Mapbox uses that transform to track the globe, and transitions cause lag.
           const addedLocations = new Set<string>();
+
+          const showLocationTooltip = (
+            name: string,
+            locationKey: string,
+            lngLat: [number, number]
+          ) => {
+            const locationRoutes =
+              locationRoutesRef.current.get(locationKey) || [];
+            const next = { name, routes: locationRoutes, lngLat };
+            hoveredLocationRef.current = next;
+            setHoveredLocation(next);
+            // Project immediately on the next frame once the tooltip mounts
+            requestAnimationFrame(() => syncTooltipPosition());
+          };
+
+          const hideLocationTooltip = () => {
+            hoveredLocationRef.current = null;
+            setHoveredLocation(null);
+            // Reset any scale/glow left on markers after tap-to-dismiss
+            markersRef.current.forEach((marker) => {
+              const root = marker.getElement();
+              const inner = root.firstElementChild as HTMLElement | null;
+              if (inner) {
+                inner.style.transform = "scale(1)";
+              }
+            });
+          };
 
           routes.forEach((route) => {
             if (!map.current) return;
@@ -642,39 +667,54 @@ export default function GlobeVisualization({
               originEl.className = "location-marker";
               originEl.dataset.locationKey = originKey;
               originEl.dataset.locationName = route.from;
+              // No transform transition on the root — Mapbox positions via transform
               originEl.style.cssText = `
                 width: 10px;
                 height: 10px;
+                cursor: pointer;
+                pointer-events: all;
+              `;
+
+              const originInner = document.createElement("div");
+              originInner.style.cssText = `
+                width: 100%;
+                height: 100%;
                 background: ${route.color[0]};
                 border: 2px solid rgba(255, 255, 255, 0.3);
                 border-radius: 50%;
                 box-shadow: 0 0 10px ${route.color[0]}80;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                pointer-events: all;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                transform-origin: center center;
               `;
+              originEl.appendChild(originInner);
 
-              // Add hover handlers directly
-              originEl.addEventListener("mouseenter", () => {
-                originEl.style.transform = "scale(1.5)";
-                originEl.style.boxShadow = `0 0 20px ${route.color[0]}`;
+              const activateOrigin = () => {
+                suppressMapClickRef.current = true;
+                originInner.style.transform = "scale(1.5)";
+                originInner.style.boxShadow = `0 0 20px ${route.color[0]}`;
+                showLocationTooltip(route.from, originKey, route.coords[0]);
+              };
 
-                const locationRoutes =
-                  locationRoutesRef.current.get(originKey) || [];
-                const rect = originEl.getBoundingClientRect();
+              const deactivateOrigin = () => {
+                originInner.style.transform = "scale(1)";
+                originInner.style.boxShadow = `0 0 10px ${route.color[0]}80`;
+                hideLocationTooltip();
+              };
 
-                setHoveredLocation({
-                  name: route.from,
-                  routes: locationRoutes,
-                  x: rect.left + rect.width / 2,
-                  y: rect.top,
-                });
-              });
-
-              originEl.addEventListener("mouseleave", () => {
-                originEl.style.transform = "scale(1)";
-                originEl.style.boxShadow = `0 0 10px ${route.color[0]}80`;
-                setHoveredLocation(null);
+              originEl.addEventListener("mouseenter", activateOrigin);
+              // Avoid synthetic mouseleave clearing tap-opened tooltips on mobile
+              if (window.matchMedia("(hover: hover)").matches) {
+                originEl.addEventListener("mouseleave", deactivateOrigin);
+              }
+              originEl.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const alreadyOpen =
+                  hoveredLocationRef.current?.name === route.from;
+                if (alreadyOpen) {
+                  deactivateOrigin();
+                } else {
+                  activateOrigin();
+                }
               });
 
               const originMarker = new mapboxgl.Marker({ element: originEl })
@@ -693,21 +733,26 @@ export default function GlobeVisualization({
               destEl.className = "location-marker location-pin";
               destEl.dataset.locationKey = destKey;
               destEl.dataset.locationName = route.to;
+              // No transform transition on the root — Mapbox positions via transform
               destEl.style.cssText = `
                 width: 24px;
                 height: 32px;
                 cursor: pointer;
-                transition: transform 0.3s ease;
                 pointer-events: all;
-                transform-origin: center bottom;
                 background: transparent;
                 border: none;
                 outline: none;
               `;
 
-              // SVG pin icon
-              destEl.innerHTML = `
-                <svg width="24" height="32" viewBox="0 0 24 32" style="filter: drop-shadow(0 0 8px ${route.color[1]}80); pointer-events: none;">
+              const destInner = document.createElement("div");
+              destInner.style.cssText = `
+                width: 100%;
+                height: 100%;
+                transition: transform 0.2s ease;
+                transform-origin: center bottom;
+              `;
+              destInner.innerHTML = `
+                <svg width="24" height="32" viewBox="0 0 24 32" style="filter: drop-shadow(0 0 8px ${route.color[1]}80); pointer-events: none; display: block;">
                   <path d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 19 9 19s9-12.25 9-19c0-4.97-4.03-9-9-9z" 
                     fill="${route.color[1]}" 
                     stroke="rgba(255, 255, 255, 0.4)" 
@@ -715,26 +760,33 @@ export default function GlobeVisualization({
                   <circle cx="12" cy="9" r="3" fill="rgba(0, 0, 0, 0.3)"/>
                 </svg>
               `;
+              destEl.appendChild(destInner);
 
-              // Add hover handlers directly
-              destEl.addEventListener("mouseenter", () => {
-                destEl.style.transform = "scale(1.3)";
+              const activateDest = () => {
+                suppressMapClickRef.current = true;
+                destInner.style.transform = "scale(1.3)";
+                showLocationTooltip(route.to, destKey, route.coords[1]);
+              };
 
-                const locationRoutes =
-                  locationRoutesRef.current.get(destKey) || [];
-                const rect = destEl.getBoundingClientRect();
+              const deactivateDest = () => {
+                destInner.style.transform = "scale(1)";
+                hideLocationTooltip();
+              };
 
-                setHoveredLocation({
-                  name: route.to,
-                  routes: locationRoutes,
-                  x: rect.left + rect.width / 2,
-                  y: rect.top,
-                });
-              });
-
-              destEl.addEventListener("mouseleave", () => {
-                destEl.style.transform = "scale(1)";
-                setHoveredLocation(null);
+              destEl.addEventListener("mouseenter", activateDest);
+              // Avoid synthetic mouseleave clearing tap-opened tooltips on mobile
+              if (window.matchMedia("(hover: hover)").matches) {
+                destEl.addEventListener("mouseleave", deactivateDest);
+              }
+              destEl.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const alreadyOpen =
+                  hoveredLocationRef.current?.name === route.to;
+                if (alreadyOpen) {
+                  deactivateDest();
+                } else {
+                  activateDest();
+                }
               });
 
               const destMarker = new mapboxgl.Marker({
@@ -746,6 +798,15 @@ export default function GlobeVisualization({
 
               markersRef.current.push(destMarker);
             }
+          });
+
+          // Dismiss sticky mobile tooltips when tapping empty map space
+          map.current.on("click", () => {
+            if (suppressMapClickRef.current) {
+              suppressMapClickRef.current = false;
+              return;
+            }
+            hideLocationTooltip();
           });
 
           // Animate continuous pulse effect with flowing dashes
@@ -803,7 +864,7 @@ export default function GlobeVisualization({
 
   return (
     <div
-      className="relative w-full h-screen bg-[#000005] overflow-hidden"
+      className="relative w-full h-screen h-[100dvh] max-h-[100dvh] bg-[#000005] overflow-hidden"
       data-testid="globe-container"
     >
       {/* Globe halo effect */}
@@ -833,17 +894,19 @@ export default function GlobeVisualization({
         }}
       />
 
-      {/* Distance tooltip */}
+      {/* Distance tooltip — position updated via ref on map move so it tracks the pin */}
       {hoveredLocation && hoveredLocation.routes.length > 0 && (
         <div
+          ref={tooltipRef}
           className="absolute pointer-events-none z-50"
           style={{
-            left: `${hoveredLocation.x}px`,
-            top: `${hoveredLocation.y - 80}px`,
-            transform: "translateX(-50%)",
+            left: 0,
+            top: 0,
+            transform: "translate(-50%, -100%)",
+            willChange: "left, top",
           }}
         >
-          <div className="bg-black/90 text-white px-3 py-2 rounded-lg border border-white/20 backdrop-blur-sm">
+          <div className="bg-black/90 text-white px-3 py-2 rounded-lg border border-white/20 backdrop-blur-sm mb-2">
             <div className="text-sm font-medium mb-2">
               {hoveredLocation.name}
             </div>
@@ -868,19 +931,19 @@ export default function GlobeVisualization({
         </div>
       )}
 
-      {/* Statistics panel - intelligently positioned for mobile */}
+      {/* Statistics panel — sits above iOS/Android browser chrome via dvh + safe-area */}
       <div
         className={`absolute z-50 transition-all duration-300 ${
-          isMobile
-            ? `left-4 ${safeAreaBottom > 0 ? "" : "bottom-6"}`
-            : "bottom-6 left-6"
+          isMobile ? "left-4" : "bottom-6 left-6"
         }`}
-        style={{
-          bottom:
-            isMobile && safeAreaBottom > 0
-              ? `${safeAreaBottom + 24}px`
-              : undefined,
-        }}
+        style={
+          isMobile
+            ? {
+                bottom:
+                  "max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem))",
+              }
+            : undefined
+        }
         data-testid="stats-panel"
       >
         <div className="pointer-events-auto">
